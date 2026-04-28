@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <title>Flight Tracker</title>
+    <meta name="description" content="Track flights live with weather context for both origin and destination airports." />
+
+    <!-- Theme color sets the address-bar tint when installed as PWA -->
+    <meta name="theme-color" content="#0b1020" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- iOS-specific hints (Apple still ignores manifest.json mostly) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Flights" />
+    <link rel="apple-touch-icon" href="/pwa-192.png" />
+
+    <!-- Favicon (replace with a real one when ready) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Service worker registration -->
+    <!-- We only register in production builds; in dev, Vite handles HMR and
+         a service worker would just get in the way. -->
+    <script>
+      if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then((reg) => console.log('SW registered:', reg.scope))
+            .catch((err) => console.warn('SW registration failed:', err));
+        });
+      }
+    </script>
+  </body>
+</html>
