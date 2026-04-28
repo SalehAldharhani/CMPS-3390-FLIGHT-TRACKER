@@ -8,15 +8,22 @@
 │                                                                         │
 │   ┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐  │
 │   │  React Pages    │───▶│  React Hooks     │───▶│  apiClient.js    │  │
-│   │  HomePage       │    │  useFlight       │    │  fetch wrapper   │  │
-│   │  FlightDetail   │    │                  │    │  +  Flight model │  │
+│   │  HomePage*      │    │  useFlight       │    │  fetch wrapper   │  │
+│   │  FlightDetail*  │    │                  │    │  +  Flight model │  │
 │   │  SharedFlight   │    │                  │    │  +  Weather model│  │
+│   │  Login/Signup   │    │                  │    │                  │  │
 │   └────────┬────────┘    └──────────────────┘    └────────┬─────────┘  │
-│            │                                              │            │
+│            │  * = wrapped in <RequireAuth>                │            │
 │            ▼                                              │            │
-│   ┌─────────────────┐                                     │            │
-│   │  FlightContext  │ ── localStorage (tracked flights)   │            │
-│   └─────────────────┘                                     │            │
+│   ┌─────────────────┐  ┌─────────────────┐                │            │
+│   │  AuthContext    │  │  FlightContext  │                │            │
+│   │  users + current│  │  per-user list  │                │            │
+│   └────────┬────────┘  └────────┬────────┘                │            │
+│            │                    │                         │            │
+│            └──── localStorage ──┘                         │            │
+│              ft.users.v1                                  │            │
+│              ft.currentUser.v1                            │            │
+│              ft.trackedFlights.v2.<username>              │            │
 └───────────────────────────────────────────────────────────┼────────────┘
                                                             │ /api/*
                                                             ▼
@@ -44,7 +51,13 @@
 
 **Hooks** (`useFlight`) wrap async fetch logic. This is where loading / error states live. Components stay clean.
 
-**Context** (`FlightContext`) holds app-level state — currently just the list of tracked flight numbers. Persists to `localStorage` on every change.
+**Context** holds app-level state without prop drilling. We have two:
+- `AuthContext` — the user "database" (`ft.users.v1`) and the currently signed-in username (`ft.currentUser.v1`). Exposes `signUp`, `signIn`, `signOut`, `currentUser`, `isSignedIn`.
+- `FlightContext` — the list of tracked flight numbers, scoped per signed-in user (`ft.trackedFlights.v2.<username>`). Reads `currentUser` from `AuthContext`, which is why `AuthProvider` wraps `FlightProvider` in `main.jsx`.
+
+Both persist to `localStorage` on every change.
+
+**Route protection** is done by `<RequireAuth>` in `App.jsx`. It wraps the protected pages (Home, Flight Detail) and redirects to `/login` if the user isn't signed in. Share links (`/share/:shareId`) are intentionally *not* wrapped, so anyone with a link can view a flight without signing up.
 
 **Models** (`Flight`, `Weather`) are classes that wrap raw API JSON. They expose computed properties like `routeLabel`, `progressPercent`, `flightImpact` so views don't have to compute these themselves.
 
@@ -105,13 +118,17 @@ If we add a Web Worker for map calculations, that would tick the **concurrency/m
 
 ## Persistence strategy
 
-| Data | Where | TTL |
-|---|---|---|
-| Tracked flight numbers | Browser `localStorage` | Until user clears |
-| Share links | Server in-memory `Map` | 7 days |
-| Flight & weather data | Not persisted; fetched on demand | n/a |
+| Data | Where | Key | TTL |
+|---|---|---|---|
+| User accounts | Browser `localStorage` | `ft.users.v1` | Until user clears |
+| Current session | Browser `localStorage` | `ft.currentUser.v1` | Until sign out / clear |
+| Tracked flight numbers | Browser `localStorage` | `ft.trackedFlights.v2.<username>` | Until user clears |
+| Share links | Server in-memory `Map` | (random shareId) | 7 days |
+| Flight & weather data | Not persisted; fetched on demand | — | n/a |
 
-If we add a real DB later, it would store: share links (durable), and optionally user accounts + saved flights.
+**About the auth design:** accounts are local-only (browser-side). This means accounts don't sync across devices or browsers, and passwords are stored in plaintext in localStorage. This is a deliberate scope decision — it gives the app a multi-user feel for the demo without needing a backend database, password hashing, session middleware, etc. Real server-side auth is documented as out of scope.
+
+If we add a real DB later, it would store: share links (durable), user accounts (with hashed passwords), and tracked flights server-side keyed by user.
 
 ---
 

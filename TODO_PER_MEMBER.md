@@ -12,6 +12,12 @@ The skeleton is built and works on mock data. To go from "skeleton" to "demo-rea
 **Additional features (the 5 we picked):** 4/5 in the code, 1 still TODO (API testing)
 **Preparation phase docs:** 5/5 done
 
+### What changed in the latest update
+
+Local accounts were added (sign up / sign in / sign out). Each user has their own tracked flights. Login + signup are required to use the app's main features (search, track, detail). Share links are still public (anyone with a link can view).
+
+**To try it out:** click "Sign up" in the header, create any username + password (8+ chars), and you're in. Accounts live in browser localStorage — there's no backend database. This is intentional and documented in the PROJECT_GUIDE. The team picked NOT to build real server-side auth.
+
 ---
 
 ## 👤 Jon (Front End)
@@ -395,7 +401,7 @@ If the team is starting fresh, here's a sensible sequence:
 
 So no one accidentally re-debates these:
 
-- **No login / accounts / signup** — share-link feature covers the same use case. Adding auth is 10-20 hours.
+- **No real server-side authentication** — we have local-only accounts (localStorage), which is enough to demo a multi-user feel. Real auth (database + hashed passwords + sessions) would be 10-20 hours and isn't on our spec.
 - **No live deployment** — demo will be local. Less can go wrong.
 - **No claiming Architecture Pattern or Design Pattern** as spec features — the code uses them, but the team picked 5 other features to claim.
 - **No Web Workers, no SSR, no Docker** — not in our chosen 5.

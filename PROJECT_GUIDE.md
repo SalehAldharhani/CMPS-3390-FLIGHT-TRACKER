@@ -385,6 +385,8 @@ The "Share link" button. Workflow when clicked:
 
 Holds the list of **tracked flight numbers** in React state, with persistence to localStorage. Any component can use `useFlights()` to read the list, add a flight, or remove one.
 
+**User-aware:** the storage key is `ft.trackedFlights.v2.<username>`, so each signed-in user gets their own list. Switching users (sign out + sign in as someone else) shows that user's flights instead.
+
 This is your **persistent data storage (locally)** spec item.
 
 #### `src/components/useFlight.js`
@@ -396,6 +398,36 @@ A custom React hook that fetches one flight by number. Handles:
 - A `refetch()` function for manual retry
 
 Demonstrates **async/await + AbortController** for clean concurrency.
+
+#### `src/components/AuthContext.jsx`
+
+Manages local-only user accounts via React Context.
+
+**Important:** This is **not** real authentication — usernames and passwords live in `localStorage` and are readable by anyone with access to the device. It's purely a demo/personalization layer. Real auth would need server-side hashed passwords + sessions/JWTs (see "out of scope").
+
+What it stores:
+- `ft.users.v1` — `{ username: { password } }` — the local user "database"
+- `ft.currentUser.v1` — the currently signed-in username, or null
+
+Exports `useAuth()` which gives any component: `currentUser`, `isSignedIn`, `signUp()`, `signIn()`, `signOut()`.
+
+#### `src/components/RequireAuth.jsx`
+
+A wrapper component used by `App.jsx` to protect routes. If the user isn't signed in, it redirects to `/login` and remembers where they were trying to go (so post-login can return them there).
+
+```jsx
+<Route path="/" element={
+  <RequireAuth><HomePage /></RequireAuth>
+} />
+```
+
+#### `src/components/LoginPage.jsx`
+
+The sign-in form. Username + password. Validates client-side using `validateUsername` and `validatePassword` (the same functions the server uses for input validation). On success, navigates back to wherever the user was trying to go.
+
+#### `src/components/SignupPage.jsx`
+
+The signup form. Username + password + confirm password. Same validators, plus a "passwords don't match" check. New accounts are auto-signed-in.
 
 #### `src/models/Flight.js`
 
@@ -458,7 +490,7 @@ These satisfy the prep-phase requirement (need 4 of 5 — we have all 5).
 
 | Requirement | Where |
 |---|---|
-| Persistent data storage | `localStorage` for tracked flights via `FlightContext.jsx` |
+| Persistent data storage | `localStorage` for **per-user** account data (`AuthContext`) and tracked flights (`FlightContext`, scoped per user) |
 | Client/Server validation/sanitization | `src/validators.js` used on both sides |
 | 3rd-party APIs/integrations | FlightRadar24 + weather (mock now, real once Clonexstax wires them up) |
 | API testing | TODO — Postman/Insomnia collection in `docs/api-collection.json` |
@@ -607,7 +639,7 @@ Estimated time: 30 minutes.
 
 These came up but the team chose not to build them. Listed here so we don't accidentally re-debate them.
 
-- **User accounts / login / signup** — not in spec, ~10-20 hours of work, share-link feature covers the same use case without auth burden.
+- **Real authentication (server-side users, hashed passwords, sessions/JWTs)** — we have **local-only accounts** stored in localStorage (Tier 2 auth). It feels like a multi-user app for the demo without needing a database, password hashing, or session middleware. Real auth would be 10-20 hours; the spec doesn't require any of it.
 - **Architecture pattern as a spec item** — the codebase *uses* an MVC-ish layout (routes → controllers → services), but it's not on our chosen 5. We get the organizational benefit without claiming the credit.
 - **Design pattern as a spec item** — same as above. `Flight.fromApi` / `Weather.fromApi` use the factory method pattern; `apiClient.js` uses the module pattern. They make the code cleaner but aren't claimed.
 - **Concurrency/multithreading via Web Worker** — not in our chosen 5.

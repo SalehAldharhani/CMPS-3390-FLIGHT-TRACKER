@@ -21,7 +21,7 @@ For a given flight, show:
 
 ### F3. Tracked flights
 - "Track this flight" button on the detail page.
-- Tracked flights persist across browser sessions (localStorage).
+- Tracked flights persist across browser sessions (localStorage), **scoped per signed-in user** (each user sees their own list).
 - Home page shows a card for each tracked flight with status + progress bar.
 - Cards auto-refresh every 60 seconds.
 - Each card has an "Untrack" action.
@@ -42,6 +42,19 @@ For a given flight, show:
 - Installable on desktop and mobile.
 - Works offline for the shell (cached static assets).
 - Custom theme color and icons.
+
+### F7. Local accounts (sign up / sign in)
+- New users can create an account with a username (3–20 chars, alphanumeric + `_-`) and password (8+ chars).
+- Returning users can sign in with their existing credentials.
+- Validation runs client-side using `validateUsername` and `validatePassword`.
+- Accounts persist in browser `localStorage` under the keys `ft.users.v1` and `ft.currentUser.v1`.
+- Sign in / sign up are **required** to use the home page, search, and flight detail.
+- The share-link route (`/share/:shareId`) is **public** — no account needed to view a shared flight.
+- Header shows the current username and a Sign out button when signed in.
+- Sign out clears the current session but does NOT delete the account; users can sign back in.
+- Each user has their own tracked-flight list (see F3).
+
+**Known limitation, by design:** This is local-only auth. Passwords are stored in plaintext in browser localStorage. It's a personalization layer for the demo, not a security layer. Real server-side auth (hashed passwords + sessions) is out of scope for v1.
 
 ---
 

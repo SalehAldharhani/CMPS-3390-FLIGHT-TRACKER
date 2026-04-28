@@ -44,6 +44,19 @@ export function validateEmail(input = '') {
   return { ok: true, value: cleaned };
 }
 
+// Username: 3-20 chars, alphanumeric + underscore + hyphen.
+const USERNAME_RE = /^[a-zA-Z0-9_-]{3,20}$/;
+
+export function validateUsername(input = '') {
+  const cleaned = String(input).trim();
+  if (!cleaned)                  return { ok: false, error: 'Username required.' };
+  if (cleaned.length < 3)        return { ok: false, error: 'Username must be at least 3 characters.' };
+  if (cleaned.length > 20)       return { ok: false, error: 'Username must be 20 characters or fewer.' };
+  if (!USERNAME_RE.test(cleaned))
+    return { ok: false, error: 'Use letters, numbers, hyphens, and underscores only.' };
+  return { ok: true, value: cleaned };
+}
+
 export function validatePassword(input = '') {
   if (typeof input !== 'string')
     return { ok: false, error: 'Password required.' };

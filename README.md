@@ -107,8 +107,8 @@ The exact JSON shape for `Flight` and `Weather` is documented at the top of `src
 
 ### Additional features — the 5 our team picked (need ≥ 4)
 
-- [x] **Persistent data storage** → `localStorage` for tracked flights via `FlightContext`; in-memory share store on the server (stretch: upgrade to SQLite)
-- [x] **Client/Server data validation/sanitization** → `src/validators.js` re-used on both sides; flight-number format check + email/password validators + `validateSafeText` rejects SQL/script-injection characters
+- [x] **Persistent data storage** → `localStorage` for **per-user account data** (`AuthContext`) and tracked flights (`FlightContext`, scoped per user); in-memory share store on the server (stretch: upgrade to SQLite)
+- [x] **Client/Server data validation/sanitization** → `src/validators.js` re-used on both sides; flight-number format check + **username** + password validators + `validateSafeText` rejects SQL/script-injection characters; login + signup forms validate before submitting
 - [x] **3rd-party APIs/integrations** → FlightRadar24 (or OpenSky/AviationStack) + a weather provider; integration slots ready in `server/services/`
 - [x] **API testing** → Postman/Insomnia collection at `docs/api-collection.json` *(TODO — see PROJECT_GUIDE.md)*
 - [x] **State-handling with async functions** → `useFlight.js` uses async/await + AbortController; `WeatherPanel.jsx` uses `Promise.all` for parallel weather fetches; `apiClient.js` wraps fetch with timeouts

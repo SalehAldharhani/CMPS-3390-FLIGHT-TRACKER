@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useAuth } from './AuthContext.jsx';
 
 /**
  * FlightContext
@@ -10,16 +11,24 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
  *   - "Persistent Data Storage (either locally or behind an API)"
  *   - State management without prop-drilling
  *
- * The shape stored is just an array of flight numbers (strings). The actual
- * live flight data is fetched on demand from /api/flights/:flightNumber.
+ * USER-AWARE: each signed-in user gets their own tracked flight list,
+ * scoped by their username. When no one is signed in, the list is empty
+ * and tracking is a no-op (the UI gates this anyway).
+ *
+ * Storage shape:
+ *   ft.trackedFlights.v2.<username>  -> string[] of flight numbers
  */
 
-const STORAGE_KEY = 'ft.trackedFlights.v1';
 const FlightContext = createContext(null);
 
-function loadFromStorage() {
+function storageKey(username) {
+  return `ft.trackedFlights.v2.${username}`;
+}
+
+function loadFromStorage(username) {
+  if (!username) return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(username));
     if (!raw) return [];
     const arr = JSON.parse(raw);
     return Array.isArray(arr) ? arr.filter(x => typeof x === 'string') : [];
@@ -28,25 +37,39 @@ function loadFromStorage() {
   }
 }
 
-function saveToStorage(list) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+function saveToStorage(username, list) {
+  if (!username) return;
+  try { localStorage.setItem(storageKey(username), JSON.stringify(list)); }
   catch { /* quota / private mode - ignore */ }
 }
 
 export function FlightProvider({ children }) {
-  const [trackedFlightNumbers, setTrackedFlightNumbers] = useState(loadFromStorage);
+  const { currentUser } = useAuth();
+  const [trackedFlightNumbers, setTrackedFlightNumbers] = useState(() =>
+    loadFromStorage(currentUser)
+  );
 
-  useEffect(() => { saveToStorage(trackedFlightNumbers); }, [trackedFlightNumbers]);
+  // When the signed-in user changes, swap to that user's list.
+  useEffect(() => {
+    setTrackedFlightNumbers(loadFromStorage(currentUser));
+  }, [currentUser]);
+
+  // Persist whenever the list changes (under the current user's key).
+  useEffect(() => {
+    saveToStorage(currentUser, trackedFlightNumbers);
+  }, [currentUser, trackedFlightNumbers]);
 
   const trackFlight = useCallback((flightNumber) => {
+    if (!currentUser) return;
     setTrackedFlightNumbers(prev =>
       prev.includes(flightNumber) ? prev : [...prev, flightNumber]
     );
-  }, []);
+  }, [currentUser]);
 
   const untrackFlight = useCallback((flightNumber) => {
+    if (!currentUser) return;
     setTrackedFlightNumbers(prev => prev.filter(n => n !== flightNumber));
-  }, []);
+  }, [currentUser]);
 
   const isTracked = useCallback(
     (flightNumber) => trackedFlightNumbers.includes(flightNumber),
