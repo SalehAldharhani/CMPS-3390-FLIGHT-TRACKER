@@ -332,7 +332,7 @@ The landing page. Shows:
 The detail view for one flight. Pulls the flight number from the URL via React Router's `useParams`, calls `useFlight()` to fetch data, and renders:
 - Header (airline, flight number, route, status badge)
 - Action buttons (Track/Untrack, Share link)
-- The map placeholder (`<FlightMap>`)
+- The interactive globe map (`<FlightMap>`)
 - Info tiles (departure, arrival, aircraft, position)
 - Weather panel for both airports
 
@@ -364,7 +364,20 @@ Has three states:
 
 #### `src/components/FlightMap.jsx`
 
-**Placeholder** for the map widget. Currently just shows a styled background with origin/destination IATA codes. The actual map (using MapLibre GL JS, Mapbox, or Leaflet) is a **TODO** — see "What's left" below.
+The interactive map widget on the flight detail page. Built with **MapLibre GL JS** in **globe projection** — the user sees a 3D earth they can spin and zoom. Free, no API key needed. Tiles come from CARTO's free dark-matter style.
+
+What it renders:
+- Cyan dot + IATA label at the origin airport
+- Green dot + IATA label at the destination airport
+- An amber dashed great-circle arc between them (curves over the sphere — the actual shortest path airliners fly)
+- An animated airplane glyph at the live position when the flight is airborne, rotated to match the heading
+- Clicking any marker pops up details (city name, airline + altitude + speed for the plane)
+
+The map is created **once** on mount and re-used. When the `flight` prop changes (e.g., user navigates to a different flight), only the markers and route data are updated — the map itself isn't torn down. The camera auto-fits to show all relevant points.
+
+**Why globe and not flat:** for a flight tracker spanning continents, the great-circle route only looks correct on a sphere. A flat Mercator map makes the JFK→LHR arc look weird and the polar routes look impossible.
+
+The component also includes a `greatCircle()` helper that computes N+1 points along the spherical-interpolated path between two `[lon, lat]` endpoints. If you've never seen Slerp (spherical linear interpolation), there's a comment explaining the math.
 
 #### `src/components/WeatherPanel.jsx`
 
@@ -549,14 +562,7 @@ After signing up for the chosen APIs:
 
 Estimated time: 15 minutes.
 
-#### 4. Push to GitHub
-**Owner: Jon**
-
-The version control requirement isn't met until it's actually on GitHub.
-
-Estimated time: 15 minutes (covered in earlier setup messages).
-
-#### 5. Build the API testing collection
+#### 4. Build the API testing collection
 **Owner: Anyone**
 **File: create `docs/api-collection.json`**
 
@@ -566,24 +572,7 @@ Estimated time: 1 hour.
 
 ### 🟡 Important polish (SHOULD do)
 
-#### 6. Build the actual map
-**Owner: Jon**
-**File: `src/components/FlightMap.jsx`**
-
-Currently a placeholder. Pick a library (recommend **MapLibre GL JS** — free, no token, beautiful) and render:
-- Origin and destination markers
-- A great-circle line between them
-- The live aircraft position when airborne
-
-```bash
-npm install maplibre-gl
-```
-
-Notes inline in the file. The flight position data is at `flight.position` (lat/lon/altitude/heading/groundSpeed).
-
-Estimated time: 4-8 hours.
-
-#### 7. Pick the visual direction and refine
+#### 5. Pick the visual direction and refine
 **Owner: JASD3EP**
 **File: `src/styles/app.css`**
 
@@ -597,7 +586,7 @@ All values are CSS variables at the top of `app.css` — change once, cascades e
 
 Estimated time: 4-10 hours depending on how polished you want it.
 
-#### 8. Real PWA icons
+#### 6. Real PWA icons
 **Owner: JASD3EP**
 **Files: `public/pwa-192.png`, `pwa-512.png`, `pwa-512-maskable.png`**
 
@@ -611,7 +600,7 @@ Estimated time: 30 min - 2 hours.
 
 ### 🟢 Optional / stretch (NICE to have)
 
-#### 9. Upgrade share-link storage to SQLite
+#### 7. Upgrade share-link storage to SQLite
 **Owner: Clonexstax**
 **File: `server/controllers/shareController.js`**
 
@@ -619,7 +608,7 @@ Currently the share map lives in an in-memory `Map`, so server restarts wipe all
 
 Estimated time: 2-3 hours.
 
-#### 10. Improve the empty state on Home
+#### 8. Improve the empty state on Home
 **Owner: Jon or JASD3EP**
 
 Currently the home page shows "No flights tracked yet. Search above to add one." when empty. Could:
@@ -628,7 +617,7 @@ Currently the home page shows "No flights tracked yet. Search above to add one."
 
 Estimated time: 15-30 minutes.
 
-#### 11. Honor `prefers-reduced-motion`
+#### 9. Honor `prefers-reduced-motion`
 **Owner: JASD3EP**
 
 Add a `@media (prefers-reduced-motion: reduce)` block in `app.css` that disables animations for users who've requested reduced motion. Ticks an accessibility item.

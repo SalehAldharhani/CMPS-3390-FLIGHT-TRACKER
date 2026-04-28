@@ -6,49 +6,30 @@
 
 ## 📊 Project status at a glance
 
-The skeleton is built and works on mock data. To go from "skeleton" to "demo-ready," each person has a small list. The whole team is roughly **80% done** overall.
+The skeleton is built and works on mock data. To go from "skeleton" to "demo-ready," each person has a small list. The whole team is roughly **85% done** overall.
 
-**Required spec items:** 5/5 in the code, 1 needs GitHub push to officially count
+**Required spec items:** 5/5 ✅ (version control satisfied — repo is on GitHub)
 **Additional features (the 5 we picked):** 4/5 in the code, 1 still TODO (API testing)
 **Preparation phase docs:** 5/5 done
 
-### What changed in the latest update
+### What's been added recently
 
-Local accounts were added (sign up / sign in / sign out). Each user has their own tracked flights. Login + signup are required to use the app's main features (search, track, detail). Share links are still public (anyone with a link can view).
+- **Local accounts** (sign up / sign in / sign out). Each user has their own tracked flights. Login + signup are required to use the app's main features. Share links are still public.
+- **Interactive globe map** powered by MapLibre GL JS. Shows origin/destination markers, the great-circle route between them, and a live aircraft glyph snapped onto the route. Drag to spin the earth, scroll to zoom.
 
-**To try it out:** click "Sign up" in the header, create any username + password (8+ chars), and you're in. Accounts live in browser localStorage — there's no backend database. This is intentional and documented in the PROJECT_GUIDE. The team picked NOT to build real server-side auth.
+**To try accounts:** click "Sign up" in the header, create any username + password (8+ chars), and you're in. Accounts live in browser localStorage — there's no backend database. This is intentional and documented in the PROJECT_GUIDE. The team picked NOT to build real server-side auth.
+
+**To try the map:** sign in, search `AA100`. The detail page shows the globe with the JFK→LHR route arcing across the Atlantic.
 
 ---
 
 ## 👤 Jon (Front End)
 
-### 🔴 Priority — do first
-
-#### 1. Push the project to GitHub
-**Why:** This is the one thing only you can do, and it satisfies the **Version Control** requirement on the spec. Until this happens, the team can't really collaborate.
-
-**Files:** none (just terminal commands)
-
-**Steps:**
-```
-cd "C:\Users\jonat\Documents\- College Work\CMPS 3390\CMPS3390-FINAL-PROJECT\flight-tracker"
-git init
-git add .
-git commit -m "Initial skeleton commit"
-git branch -M main
-git remote add origin https://github.com/<your-username>/flight-tracker.git
-git push -u origin main
-```
-
-Then add Clonexstax and JASD3EP as collaborators in GitHub → Settings → Collaborators.
-
-**Time:** 15-20 minutes
-
----
+> ✅ **Done:** GitHub repo set up. Skeleton + accounts + globe map all pushed.
 
 ### 🟡 Priority — do when the API is wired up
 
-#### 2. Test the frontend against real data
+#### 1. Test the frontend against real data
 **Why:** When Clonexstax replaces the mock data with real FlightRadar24/weather calls, your code might break in subtle ways. Real APIs return weird edge cases (missing fields, nulls, different time zones).
 
 **Files to check:**
@@ -66,25 +47,7 @@ Example: `flight.position?.altitude ?? '—'` instead of `flight.position.altitu
 
 ### 🟢 Optional / stretch
 
-#### 3. Build the actual map (BIG TASK)
-**Why:** `FlightMap.jsx` is currently a placeholder. The brief originally mentioned rnmapbox — for the web equivalent we'd use **MapLibre GL JS**.
-
-**Files:**
-- `src/components/FlightMap.jsx` — replace the placeholder with a real map
-
-**Steps:**
-1. `npm install maplibre-gl`
-2. Import the library + its CSS in `FlightMap.jsx`
-3. Initialize the map in a `useEffect` when the component mounts
-4. Add markers at `flight.origin` and `flight.destination`
-5. Draw a great-circle line between them
-6. If `flight.position` exists, add a plane marker at the live position with `flight.position.heading` for rotation
-
-**Time:** 4-8 hours
-
-**Decision point:** Skip this if you're tight on time. The placeholder works fine for a class demo, and the spec doesn't require a map.
-
-#### 4. Improve the empty state on Home
+#### 2. Improve the empty state on Home
 **Why:** When a new user opens the site, the home page just says "No flights tracked yet." Could be more inviting.
 
 **Files:**
@@ -373,22 +336,21 @@ This respects users who've requested reduced motion in their OS settings. Small 
 
 ## 📅 Suggested order of operations
 
-If the team is starting fresh, here's a sensible sequence:
+✅ **Done:** Skeleton built. Globe map. Local accounts. Pushed to GitHub.
 
-**Day 1 (right now):**
-- Jon: Push to GitHub
-- Everyone else: Clone the repo, run `npm install`, run `npm start`, confirm it works locally
-- Clonexstax: Pick the APIs
+**Now (Day 1):**
+- Clonexstax + JASD3EP: Clone the repo, run `npm install`, run `npm start`, confirm it works locally
+- Clonexstax: Pick the APIs (see your section below)
 
 **Days 2-4:**
 - Clonexstax: Wire up real flight + weather APIs (the big work)
 - JASD3EP: Read style guide, pick fonts, refine palette
-- Jon: Wait or start the map
+- Jon: On standby — wait for real APIs to test against
 
 **Days 5-6:**
-- Jon: Test against real APIs, fix any breakage
+- Jon: Test against real APIs, fix any breakage from edge cases
 - JASD3EP: Polish components
-- Anyone: Build the Postman collection
+- Anyone: Build the Postman collection (last remaining spec item)
 
 **Day 7 (demo prep):**
 - Pre-track sample flights so the home page looks lived-in

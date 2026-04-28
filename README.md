@@ -99,7 +99,7 @@ The exact JSON shape for `Flight` and `Weather` is documented at the top of `src
 
 ### Required main features
 
-- [x] **Version control** → `.gitignore` ready, init `git` and push to GitHub
+- [x] **Version control** → Repo on GitHub, team collaborating via PRs
 - [x] **Pure server-side controller** → `server/controllers/flightController.js`
 - [x] **At least 2 HTTP API calls from the client** → `apiClient.js` exposes `fetchFlight`, `searchFlights`, `fetchWeather`, `createShareLink`, `fetchSharedFlight`
 - [x] **Client-side data model classes** → `src/models/Flight.js`, `src/models/Weather.js`
@@ -119,14 +119,26 @@ That's all 5 of our chosen features — one over the required 4.
 
 ## Git workflow
 
+The repo is on GitHub. To clone and start working:
+
 ```bash
-git init
-git add .
-git commit -m "Initial skeleton"
-git branch -M main
-git remote add origin <your-repo-url>
-git push -u origin main
+git clone <repo-url>
+cd flight-tracker
+npm install
+npm start
 ```
+
+To work on a feature:
+
+```bash
+git checkout -b your-branch-name
+# ...edit files...
+git add .
+git commit -m "what you changed"
+git push -u origin your-branch-name
+```
+
+Then open a PR on GitHub and have a teammate review before merging into `main`.
 
 **Branch convention:**
 - `main` — always works
@@ -141,7 +153,6 @@ Open PRs into `main`. Aim for small, reviewable commits.
 ## What still needs picking up
 
 1. **Real API keys + integrations** — FlightRadar24 and weather provider (Clonexstax). Slots marked `TODO: BACKEND` in `server/services/`.
-2. **Map library** — pick Mapbox GL JS, MapLibre, or Leaflet, then build out `src/components/FlightMap.jsx`. Notes inside that file.
-3. **Real fonts + final palette** — JASD3EP. All values live in `src/styles/theme.css`. Replace placeholders with the real design system.
-4. **PWA icons** — drop `pwa-192.png` and `pwa-512.png` in `public/`.
-5. **Tests** — even just one round of API testing with Postman/Insomnia covers the "API testing" spec item.
+2. **Real fonts + final palette** — JASD3EP. All values live in `src/styles/app.css`. Replace placeholders with the real design system.
+3. **Real PWA icons** — replace the placeholder `pwa-*.png` files in `public/` with proper designs (JASD3EP).
+4. **Tests** — even just one round of API testing with Postman/Insomnia covers the "API testing" spec item.
