@@ -443,6 +443,10 @@ code, .mono {
   font-family: var(--font-mono);
   font-size: var(--fs-sm);
 }
+.ft-tile__empty {
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+}
 
 
 /* =============================================================================
@@ -563,12 +567,37 @@ code, .mono {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--sp-2);
   margin-top: auto;
   padding-top: var(--sp-2);
 }
 .ft-card__link {
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
+  margin-right: auto;  /* push the buttons to the right */
+}
+.ft-card__refresh {
+  font-size: var(--fs-base);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-pill);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+.ft-card__refresh:hover:not(:disabled) {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.ft-card__refresh:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 .ft-card__remove {
   font-size: var(--fs-xs);
@@ -893,4 +922,133 @@ code, .mono {
   text-align: center;
   padding-top: var(--sp-3);
   border-top: 1px solid var(--color-border-soft);
+}
+
+
+/* =============================================================================
+   8. SHARED FLIGHT PAGE — public read-only view
+   ============================================================================= */
+
+.ft-shared {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-4);
+}
+
+.ft-shared__loading {
+  padding: var(--sp-8) var(--sp-4);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.ft-shared__error {
+  padding: var(--sp-6);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-status-cancel);
+}
+
+/* Hero block at the top of the shared page */
+.ft-shared__hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.ft-shared__eyebrow {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-accent);
+  margin: 0;
+}
+
+.ft-shared__headline {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  margin: 0;
+  line-height: 1.15;
+  color: var(--color-text);
+}
+
+.ft-shared__sub {
+  margin: 0;
+  font-size: var(--fs-base);
+  color: var(--color-text-muted);
+}
+
+.ft-shared__status {
+  font-weight: var(--fw-bold);
+}
+.ft-shared__status--ontime { color: var(--color-status-ok); }
+.ft-shared__status--delay  { color: var(--color-status-warn); }
+.ft-shared__status--cancel { color: var(--color-status-cancel); }
+.ft-shared__status--board  { color: var(--color-text-muted); }
+
+/* Times row — Departed → Arriving */
+.ft-shared__times {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-3);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4);
+  margin-top: var(--sp-3);
+}
+
+.ft-shared__times > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  flex: 1;
+}
+
+.ft-shared__times-arrow {
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-xl);
+  color: var(--color-text-faint);
+}
+
+.ft-shared__times-label {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ft-shared__times-value {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+
+.ft-shared__times-meta {
+  font-size: var(--fs-xs);
+  color: var(--color-text-faint);
+}
+
+/* CTA row at bottom */
+.ft-shared__cta-row {
+  text-align: center;
+  margin: 0;
+}
+.ft-shared__cta {
+  display: inline-block;
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: var(--fw-bold);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: filter var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+.ft-shared__cta:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
 }

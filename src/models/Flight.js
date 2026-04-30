@@ -71,8 +71,32 @@ export default class Flight {
     return Math.round((new Date(est) - new Date(sched)) / 60000);
   }
 
-  /** Rough percentage of the flight completed (0-100). Naive: time-based. */
+  /**
+   * Percentage of the flight completed (0-100).
+   *
+   * Strategy (in order of preference):
+   *   1. POSITION-BASED — if we have origin/destination coords and a current
+   *      position, compute distance traveled vs. total route distance. This
+   *      works for live flights even without scheduled times. Most accurate.
+   *   2. TIME-BASED — if positions aren't available but departure + arrival
+   *      times are, fall back to elapsed/total time.
+   *   3. ZERO — if we have neither, just return 0.
+   */
   get progressPercent() {
+    // Try position-based first (most reliable for live flights)
+    const o = this.origin;
+    const d = this.destination;
+    const p = this.position;
+    if (o && d && p && o.lat && o.lon && d.lat && d.lon &&
+        (o.lat !== 0 || o.lon !== 0) && (d.lat !== 0 || d.lon !== 0)) {
+      const total = haversine(o.lat, o.lon, d.lat, d.lon);
+      const traveled = haversine(o.lat, o.lon, p.lat, p.lon);
+      if (total > 0) {
+        return Math.max(0, Math.min(100, Math.round((traveled / total) * 100)));
+      }
+    }
+
+    // Fallback to time-based
     const dep = this.departure?.actual ?? this.departure?.scheduled;
     const arr = this.arrival?.estimated ?? this.arrival?.scheduled;
     if (!dep || !arr) return 0;
@@ -93,4 +117,19 @@ export default class Flight {
   toJSON() { return { ...this.raw }; }
 
   static fromApi(json) { return new Flight(json); }
+}
+
+/**
+ * Great-circle distance between two lat/lon points (in km).
+ * Used by progressPercent to compute "how far through the route is the plane?"
+ */
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in km
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
 }

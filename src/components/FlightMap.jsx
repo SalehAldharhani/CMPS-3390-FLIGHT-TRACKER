@@ -11,12 +11,6 @@ import 'maplibre-gl/dist/maplibre-gl.css';
  * the globe projection is guaranteed to apply. Some hosted styles override
  * projection settings, which silently falls back to flat Mercator.
  *
- * The route source/layer are also part of the inline style — that way the
- * route line renders the instant the map is alive, with no waiting on a
- * separate `'load'` event.
- *
- * Tile data still comes from CARTO's free dark-matter raster tiles — no
- * API key needed.
  */
 
 // --- Inline basemap style ------------------------------------------------
@@ -162,11 +156,12 @@ export default function FlightMap({ flight }) {
     // ---- Plane marker (only if airborne) ----
     markersRef.current.plane?.remove();
     markersRef.current.plane = null;
+    let snappedPlane = null;
     if (flight.position) {
       // Snap the plane to the closest point on the great-circle. This
       // ensures the plane visually sits on the route line even if the
       // raw position is slightly off (real APIs do this; mock data may not).
-      const snapped = closestPointOnPath(
+      snappedPlane = closestPointOnPath(
         [flight.position.lon, flight.position.lat],
         routeCoords
       );
@@ -175,18 +170,24 @@ export default function FlightMap({ flight }) {
         element: makePlaneElement(flight.position.heading ?? 0),
         anchor: 'center',
       })
-        .setLngLat(snapped)
+        .setLngLat(snappedPlane)
         .setPopup(new maplibregl.Popup({ offset: 18 }).setText(
           `${flight.flightNumber} • ${flight.position.altitude ?? '?'} ft • ${flight.position.groundSpeed ?? '?'} kts`
         ))
         .addTo(map);
     }
 
-    // ---- Fit camera to show all relevant points ----
+    // ---- Fit camera to show the actual route ----
+    // IMPORTANT: use the UNWRAPPED route coordinates here, not the raw
+    // origin/destination longitudes. For Pacific routes (LAX↔NRT etc.),
+    // the unwrapped path uses extended-range longitudes like -219° to
+    // express points across the date line. If we used the raw airport
+    // coordinates here, the bounding box would span the wrong half of
+    // the globe and the camera would center on the back side of Earth
+    // (where the route ISN'T).
     const bounds = new maplibregl.LngLatBounds();
-    bounds.extend([o.lon, o.lat]);
-    bounds.extend([d.lon, d.lat]);
-    if (flight.position) bounds.extend([flight.position.lon, flight.position.lat]);
+    routeCoords.forEach((pt) => bounds.extend(pt));
+    if (snappedPlane) bounds.extend(snappedPlane);
     map.fitBounds(bounds, {
       padding: { top: 60, right: 60, bottom: 60, left: 60 },
       duration: 1500,
@@ -227,6 +228,13 @@ function makePlaneElement(headingDeg) {
 // ---------------------------------------------------------------------------
 // Great-circle interpolation (Slerp on the unit sphere)
 // ---------------------------------------------------------------------------
+// IMPORTANT: routes that cross the international date line (e.g. LAX → NRT)
+// produce longitudes that wrap from -180 to +180. MapLibre would then draw
+// the line going the "long way around" the globe through the wrong hemisphere.
+// To prevent this, we UNWRAP longitudes as we go: if a new longitude jumps
+// more than 180° from the previous one, we shift it by ±360° to keep the
+// sequence continuous. The result still represents the same physical points
+// — just expressed in extended-range longitude coordinates.
 function greatCircle([lon1, lat1], [lon2, lat2], segments = 64) {
   const toRad = (deg) => (deg * Math.PI) / 180;
   const toDeg = (rad) => (rad * 180) / Math.PI;
@@ -244,6 +252,7 @@ function greatCircle([lon1, lat1], [lon2, lat2], segments = 64) {
 
   const sinθ = Math.sin(θ);
   const points = [];
+  let prevLon = null;
 
   for (let i = 0; i <= segments; i++) {
     const t = i / segments;
@@ -255,7 +264,16 @@ function greatCircle([lon1, lat1], [lon2, lat2], segments = 64) {
     const z = A * a[2] + B * b[2];
 
     const lat = toDeg(Math.atan2(z, Math.sqrt(x*x + y*y)));
-    const lon = toDeg(Math.atan2(y, x));
+    let lon   = toDeg(Math.atan2(y, x));
+
+    // Unwrap: keep the longitude continuous with the previous point so that
+    // MapLibre draws the line over the date line, not back around the globe.
+    if (prevLon !== null) {
+      while (lon - prevLon >  180) lon -= 360;
+      while (lon - prevLon < -180) lon += 360;
+    }
+    prevLon = lon;
+
     points.push([lon, lat]);
   }
   return points;

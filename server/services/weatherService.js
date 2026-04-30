@@ -3,91 +3,125 @@
  * --------------------------------------------------------------------------
  * OWNER: Clonexstax
  *
+ * Calls Open-Meteo (https://open-meteo.com).
+ *
  * EXPECTED RETURN SHAPE (must match src/models/Weather.js):
  *   {
  *     location, tempC, tempF, condition, icon,
  *     windKph, windDirection, visibilityKm, precipitationMm, updatedAt
  *   }
- *
- * TODO: BACKEND
- *   - Pick a provider: OpenWeatherMap, WeatherAPI.com, Open-Meteo (free, no key).
- *   - Add WEATHER_API_KEY to .env if needed.
- *   - Replace the mock body with a real fetch and map fields into the shape above.
- *   - Add a short-lived cache keyed on rounded lat/lon to cut upstream calls.
  */
 
-//API KEYS
-const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
-const WEATHER_BASE_URL = 'http://api.weatherstack.com';
+const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
 
+/**
+ * Map a WMO weather code (what Open-Meteo returns) to a human-readable
+ * condition string. The full table is at https://open-meteo.com/en/docs
+ * under "Weather Variable Documentation". This covers the common cases.
+ */
+function describeWeatherCode(code) {
+  const map = {
+    0:  'Clear',
+    1:  'Mainly clear',
+    2:  'Partly cloudy',
+    3:  'Overcast',
+    45: 'Fog',
+    48: 'Freezing fog',
+    51: 'Light drizzle',
+    53: 'Drizzle',
+    55: 'Heavy drizzle',
+    56: 'Freezing drizzle',
+    57: 'Heavy freezing drizzle',
+    61: 'Light rain',
+    63: 'Rain',
+    65: 'Heavy rain',
+    66: 'Freezing rain',
+    67: 'Heavy freezing rain',
+    71: 'Light snow',
+    73: 'Snow',
+    75: 'Heavy snow',
+    77: 'Snow grains',
+    80: 'Rain showers',
+    81: 'Heavy rain showers',
+    82: 'Violent rain showers',
+    85: 'Snow showers',
+    86: 'Heavy snow showers',
+    95: 'Thunderstorm',
+    96: 'Thunderstorm with hail',
+    99: 'Severe thunderstorm with hail',
+  };
+  return map[code] ?? 'Unknown';
+}
+
+/** Convert wind direction in degrees to a compass label (N, NE, E, ...) */
+function degreesToCompass(deg) {
+  if (deg === null || deg === undefined) return '';
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return dirs[Math.round(((deg % 360) / 45)) % 8];
+}
+
+/** A short slug we can use for an icon name on the frontend if desired. */
+function weatherCodeToIcon(code) {
+  if (code === 0)                    return 'clear';
+  if (code === 1 || code === 2)      return 'partly-cloudy';
+  if (code === 3)                    return 'overcast';
+  if (code === 45 || code === 48)    return 'fog';
+  if (code >= 51 && code <= 67)      return 'rain';
+  if (code >= 71 && code <= 77)      return 'snow';
+  if (code >= 80 && code <= 82)      return 'showers';
+  if (code === 85 || code === 86)    return 'snow-showers';
+  if (code >= 95)                    return 'thunderstorm';
+  return 'unknown';
+}
+
+/**
+ * Fetch current weather for a single lat/lon.
+ * Throws on network errors or non-200 responses.
+ */
 export async function fetchWeatherFromProvider({ lat, lon }) {
-  // ---------- TODO: BACKEND - real API call -------------------------------
-  if (!WEATHER_API_KEY) throw new Error('Missing WEATHER_API_KEY in .env');
-    
+  // Open-Meteo's "current" endpoint returns observations for right now.
+  // We request all the fields the frontend needs in one request.
   const params = new URLSearchParams({
-    access_key: WEATHER_API_KEY,
-    query:      `${lat},${lon}`,
-    units:      'm', // metric – gives °C, km/h, km visibility
+    latitude:        String(lat),
+    longitude:       String(lon),
+    current:         'temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,visibility',
+    wind_speed_unit: 'kmh',
+    timezone:        'auto',
   });
- 
-  const res = await fetch(`${WEATHER_BASE_URL}/current?${params}`);
- 
+
+  const url = `${OPEN_METEO_BASE}?${params}`;
+  const res = await fetch(url);
+
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Weatherstack HTTP error ${res.status}: ${body}`);
+    const body = await res.text().catch(() => '');
+    throw new Error(`Open-Meteo HTTP error ${res.status}: ${body}`);
   }
- 
+
   const json = await res.json();
- 
-  // Weatherstack returns { success: false, error: {...} } on API-level errors
-  if (json.success === false) {
-    throw new Error(
-      `Weatherstack API error ${json.error?.code}: ${json.error?.info}`
-    );
-  }
- 
-  const current  = json.current;
-  const location = json.location;
- 
-  const tempC = current.temperature;
- 
+  const c = json.current ?? {};
+
+  const tempC = c.temperature_2m;
+  const code  = c.weather_code;
+
+  // Open-Meteo returns visibility in METERS — convert to km.
+  const visibilityKm = c.visibility != null
+    ? Math.round((c.visibility / 1000) * 10) / 10
+    : null;
+
   return {
-    // Prefer city name from the API; fall back to raw coords
-    location:        location?.name
-                     ? `${location.name}, ${location.country}`
-                     : `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
- 
-    tempC,
-    tempF:           Math.round(tempC * 9 / 5 + 32),
- 
-    condition:       current.weather_descriptions?.[0] ?? 'Unknown',
- 
-    // Weatherstack gives a full icon URL, e.g. https://cdn.worldweatheronline.com/...
-    icon:            current.weather_icons?.[0] ?? null,
- 
-    windKph:         current.wind_speed,       // already in km/h when units=m
-    windDirection:   current.wind_dir,         // e.g. "NNE"
-    visibilityKm:    current.visibility,       // km
-    precipitationMm: current.precip,           // mm
+    location:        `${Number(lat).toFixed(2)}, ${Number(lon).toFixed(2)}`,
+
+    tempC:           tempC,
+    tempF:           tempC != null ? Math.round(tempC * 9 / 5 + 32) : null,
+
+    condition:       describeWeatherCode(code),
+    icon:            weatherCodeToIcon(code),
+
+    windKph:         c.wind_speed_10m ?? 0,
+    windDirection:   degreesToCompass(c.wind_direction_10m),
+    visibilityKm:    visibilityKm ?? 0,
+    precipitationMm: c.precipitation ?? 0,
+
     updatedAt:       new Date().toISOString(),
   };
 }
-//   // Deterministic-ish mock so the same coords give the same result.
-//   const seed = Math.abs(Math.round(lat * 7 + lon * 13));
-//   const tempC = 5 + (seed % 25);
-//   return {
-//     location:        `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
-//     tempC,
-//     tempF:           Math.round(tempC * 9 / 5 + 32),
-//     condition:       ['Clear', 'Partly Cloudy', 'Overcast', 'Light rain'][seed % 4],
-//     icon:            'partly-cloudy',
-//     windKph:         5 + (seed % 40),
-//     windDirection:   ['N','NE','E','SE','S','SW','W','NW'][seed % 8],
-//     visibilityKm:    2 + (seed % 14),
-//     precipitationMm: seed % 5,
-//     updatedAt:       new Date().toISOString(),
-//   };
-//   // -------------------------------------------------------------------------
-// }
-
-// function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

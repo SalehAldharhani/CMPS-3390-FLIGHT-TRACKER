@@ -9,7 +9,10 @@ import { useFlights } from './FlightContext.jsx';
  * page doesn't have to coordinate N parallel requests in one effect.
  */
 export default function FlightCard({ flightNumber }) {
-  const { flight, loading, error } = useFlight(flightNumber, { pollMs: 60_000 });
+  // Fetch once on mount. No auto-polling — burns FR24 credits and the home
+  // page rarely needs sub-minute freshness anyway. Use the manual "Refresh"
+  // button (here on the card, or on the detail page) to force a re-fetch.
+  const { flight, loading, error, refetch } = useFlight(flightNumber);
   const { untrackFlight } = useFlights();
 
   if (loading && !flight) {
@@ -61,6 +64,15 @@ export default function FlightCard({ flightNumber }) {
         <Link to={`/flight/${flight.flightNumber}`} className="ft-card__link">
           View details →
         </Link>
+        <button
+          className="ft-card__refresh"
+          onClick={refetch}
+          disabled={loading}
+          aria-label={`Refresh ${flightNumber}`}
+          title="Fetch the latest position"
+        >
+          {loading ? '…' : '↻'}
+        </button>
         <button
           className="ft-card__remove"
           onClick={() => untrackFlight(flightNumber)}

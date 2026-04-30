@@ -7,7 +7,11 @@ import ShareLinkButton from './ShareLinkButton.jsx';
 
 export default function FlightDetailPage() {
   const { flightNumber } = useParams();
-  const { flight, loading, error, refetch } = useFlight(flightNumber, { pollMs: 30_000 });
+  const { flight, loading, error, refetch } = useFlight(flightNumber, {
+    // No auto-polling — single fetch on mount. Use the Refresh button to
+    // force an update. Saves FR24 credits and avoids 429s during the demo.
+    detailed: true,        // hit /details for departure time + runway info
+  });
   const { isTracked, trackFlight, untrackFlight } = useFlights();
 
   if (loading && !flight) {
@@ -49,6 +53,15 @@ export default function FlightDetailPage() {
           <span className={`ft-detail__status ft-detail__status--${flight.statusToken}`}>
             {flight.statusLabel}
           </span>
+          <button
+            className="ft-detail__btn"
+            onClick={refetch}
+            disabled={loading}
+            aria-label="Refresh flight data"
+            title="Fetch the latest position and weather"
+          >
+            {loading ? '…' : '↻ Refresh'}
+          </button>
           <ShareLinkButton flightNumber={flight.flightNumber} />
           {tracked ? (
             <button className="ft-detail__btn" onClick={() => untrackFlight(flight.flightNumber)}>
@@ -67,13 +80,15 @@ export default function FlightDetailPage() {
 
       <section className="ft-detail__grid">
         <InfoTile label="Departure" lines={[
+          flight.departure?.actual    && `Off ${formatTime(flight.departure.actual)}`,
           flight.departure?.scheduled && `Sched ${formatTime(flight.departure.scheduled)}`,
-          flight.departure?.actual    && `Act ${formatTime(flight.departure.actual)}`,
+          flight.departure?.runway    && `Rwy ${flight.departure.runway}`,
           flight.departure?.gate      && `Gate ${flight.departure.gate}`,
         ]} />
         <InfoTile label="Arrival" lines={[
-          flight.arrival?.scheduled && `Sched ${formatTime(flight.arrival.scheduled)}`,
           flight.arrival?.estimated && `Est ${formatTime(flight.arrival.estimated)}`,
+          flight.arrival?.scheduled && `Sched ${formatTime(flight.arrival.scheduled)}`,
+          flight.arrival?.runway    && `Rwy ${flight.arrival.runway}`,
           flight.arrival?.gate      && `Gate ${flight.arrival.gate}`,
         ]} />
         <InfoTile label="Aircraft" lines={[
@@ -95,11 +110,14 @@ export default function FlightDetailPage() {
 }
 
 function InfoTile({ label, lines = [] }) {
+  const items = lines.filter(Boolean);
   return (
     <div className="ft-tile">
       <span className="ft-tile__label">{label}</span>
       <ul>
-        {lines.filter(Boolean).map((l, i) => <li key={i}>{l}</li>)}
+        {items.length === 0
+          ? <li className="ft-tile__empty">—</li>
+          : items.map((l, i) => <li key={i}>{l}</li>)}
       </ul>
     </div>
   );

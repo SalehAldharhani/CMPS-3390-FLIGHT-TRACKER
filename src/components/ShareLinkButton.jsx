@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createShareLink } from '../apiClient.js';
+import { useAuth } from './AuthContext.jsx';
 
 /**
  * ShareLinkButton
@@ -8,17 +9,21 @@ import { createShareLink } from '../apiClient.js';
  *   "Give each tracked flight a shareable page or deep link so family /
  *    friends can open the same flight quickly."
  *
- * Hits POST /api/share with the flight number, gets back a shareId, and
- * copies the resulting URL to the clipboard.
+ * Hits POST /api/share with the flight number AND the current username
+ * (so the shared page can say "Jon will arrive at..."), gets back a
+ * shareId, and copies the resulting URL to the clipboard.
  */
 export default function ShareLinkButton({ flightNumber }) {
+  const { currentUser } = useAuth();
   const [state, setState] = useState('idle'); // idle | loading | copied | error
   const [error, setError] = useState(null);
 
   async function onClick() {
     try {
       setState('loading');
-      const { shareId } = await createShareLink(flightNumber);
+      const { shareId } = await createShareLink(flightNumber, {
+        sharedBy: currentUser ?? null,
+      });
       const url = `${window.location.origin}/share/${shareId}`;
       await navigator.clipboard.writeText(url);
       setState('copied');

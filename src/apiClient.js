@@ -54,9 +54,15 @@ export class ApiError extends Error {
 // Flights
 // ---------------------------------------------------------------------------
 
-/** GET /api/flights/:flightNumber -> Flight */
+/** GET /api/flights/:flightNumber -> Flight (live position only, 1 credit) */
 export async function fetchFlight(flightNumber, opts) {
   const json = await request(`/flights/${encodeURIComponent(flightNumber)}`, opts);
+  return Flight.fromApi(json);
+}
+
+/** GET /api/flights/:flightNumber/details -> Flight (live + summary, 2 credits) */
+export async function fetchFlightDetails(flightNumber, opts) {
+  const json = await request(`/flights/${encodeURIComponent(flightNumber)}/details`, opts);
   return Flight.fromApi(json);
 }
 
@@ -81,12 +87,22 @@ export async function fetchWeather({ lat, lon }, opts) {
 // ---------------------------------------------------------------------------
 
 /** POST /api/share { flightNumber } -> { shareId, url } */
-export async function createShareLink(flightNumber, opts) {
-  return request('/share', { method: 'POST', body: { flightNumber }, ...opts });
+/** POST /api/share { flightNumber, sharedBy? } -> { shareId, url } */
+export async function createShareLink(flightNumber, opts = {}) {
+  const { sharedBy, ...fetchOpts } = opts;
+  return request('/share', {
+    method: 'POST',
+    body: { flightNumber, sharedBy },
+    ...fetchOpts,
+  });
 }
 
 /** GET /api/share/:shareId -> Flight (read-only snapshot) */
+/** GET /api/share/:shareId -> { flight: Flight, sharedBy: string|null } */
 export async function fetchSharedFlight(shareId, opts) {
   const json = await request(`/share/${encodeURIComponent(shareId)}`, opts);
-  return Flight.fromApi(json);
+  return {
+    flight:   Flight.fromApi(json.flight),
+    sharedBy: json.sharedBy ?? null,
+  };
 }

@@ -7,13 +7,20 @@
  *
  * Implements spec requirement: "At least one pure server-side controller"
  *
- * VALIDATION:
- *   We re-run the same flight-number validator as the client. The client's
- *   copy gives quick UX feedback; the server's copy is the real defence.
+ * Two public flight endpoints:
+ *   GET /api/flights/:flightNumber          -> live position only (1 credit)
+ *   GET /api/flights/:flightNumber/details  -> live + summary    (2 credits)
+ *
+ * The detail page uses /details for departure time + runway info; the home
+ * page card uses the basic endpoint to keep credit usage low.
  */
 
 import { validateFlightNumber } from '../../src/validators.js';
-import { fetchFlightFromProvider, searchFlightsFromProvider } from '../services/flightService.js';
+import {
+  fetchFlightFromProvider,
+  fetchFlightDetailsFromProvider,
+  searchFlightsFromProvider,
+} from '../services/flightService.js';
 
 /** GET /api/flights/:flightNumber */
 export async function getFlight(req, res, next) {
@@ -24,6 +31,25 @@ export async function getFlight(req, res, next) {
     }
 
     const flight = await fetchFlightFromProvider(result.value);
+    if (!flight) {
+      return res.status(404).json({ error: `Flight ${result.value} not found.` });
+    }
+
+    res.json(flight);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/flights/:flightNumber/details */
+export async function getFlightDetails(req, res, next) {
+  try {
+    const result = validateFlightNumber(req.params.flightNumber);
+    if (!result.ok) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    const flight = await fetchFlightDetailsFromProvider(result.value);
     if (!flight) {
       return res.status(404).json({ error: `Flight ${result.value} not found.` });
     }
