@@ -749,7 +749,7 @@ code,
 }
 .ft-map-marker__label {
   background: rgba(11, 16, 32, 0.85);
-  color: var(--color-text);
+  color: #ffffff;
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
@@ -761,7 +761,7 @@ code,
 /* Live aircraft marker */
 .ft-map-plane {
   font-size: 1.5rem;
-  color: var(--color-accent);
+  color: #ffffff;
   text-shadow: 0 0 8px rgba(255, 179, 71, 0.8);
   cursor: pointer;
   transition: transform var(--dur-med) var(--ease-out);

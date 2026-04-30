@@ -245,11 +245,11 @@ function makePlaneElement(headingDeg) {
   // — different fonts render it pointing in different directions, so
   // subtracting a fixed offset was unreliable.
   el.innerHTML = `
-    <svg viewBox="0 0 24 24" width="24" height="24"
+    <svg viewBox="0 0 24 24" width="36" height="36"
          style="display:block;transform:rotate(${headingDeg}deg);transition:transform 300ms ease-out;"
          aria-hidden="true">
       <path fill="currentColor"
-            d="M12 2 L14.5 11 L22 13 L22 14.5 L14.5 13.5 L13 21 L14.5 22 L14.5 23 L9.5 23 L9.5 22 L11 21 L9.5 13.5 L2 14.5 L2 13 L9.5 11 Z"/>
+            d="M12 2 C11.2 2 10.5 2.7 10.5 3.5 L10.5 10 L3 14.5 L3 16.5 L10.5 14 L10.5 20.5 L8 21.5 L8 23 L12 22 L16 23 L16 21.5 L13.5 20.5 L13.5 14 L21 16.5 L21 14.5 L13.5 10 L13.5 3.5 C13.5 2.7 12.8 2 12 2 Z"/>
     </svg>
   `;
   return el;
