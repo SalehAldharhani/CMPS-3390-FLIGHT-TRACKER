@@ -1,6 +1,6 @@
-import FlightSearch from './FlightSearch.jsx';
-import FlightCard from './FlightCard.jsx';
-import { useFlights } from './FlightContext.jsx';
+import FlightSearch from "./FlightSearch.jsx";
+import FlightCard from "./FlightCard.jsx";
+import { useFlights } from "./FlightContext.jsx";
 
 export default function HomePage() {
   const { trackedFlightNumbers } = useFlights();
@@ -8,13 +8,10 @@ export default function HomePage() {
   return (
     <div className="ft-home">
       <section className="ft-home__hero">
-        <p className="ft-home__eyebrow">Project 3 · Flight Tracker</p>
-        <h1 className="ft-home__title">
-          Where in the world is your flight?
-        </h1>
+        <h1 className="ft-home__title">Where in the world is your flight?</h1>
         <p className="ft-home__lede">
-          Punch in a flight number to see live position, status, and weather
-          at both airports. Share a link with whoever is waiting for you.
+          Punch in a flight number to see live position, status, and weather at
+          both airports. Share a link with whoever is waiting for you.
         </p>
         <FlightSearch />
       </section>
