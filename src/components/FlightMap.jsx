@@ -11,6 +11,12 @@ import 'maplibre-gl/dist/maplibre-gl.css';
  * the globe projection is guaranteed to apply. Some hosted styles override
  * projection settings, which silently falls back to flat Mercator.
  *
+ * The route source/layer are also part of the inline style — that way the
+ * route line renders the instant the map is alive, with no waiting on a
+ * separate `'load'` event.
+ *
+ * Tile data still comes from CARTO's free dark-matter raster tiles — no
+ * API key needed.
  */
 
 // --- Inline basemap style ------------------------------------------------
@@ -158,16 +164,28 @@ export default function FlightMap({ flight }) {
     markersRef.current.plane = null;
     let snappedPlane = null;
     if (flight.position) {
-      // Snap the plane to the closest point on the great-circle. This
-      // ensures the plane visually sits on the route line even if the
-      // raw position is slightly off (real APIs do this; mock data may not).
-      snappedPlane = closestPointOnPath(
+      // Snap the plane to the closest vertex on the great-circle. Returns
+      // both the snapped point and its index along the route so we can
+      // compute the local bearing.
+      const snap = closestPointOnPath(
         [flight.position.lon, flight.position.lat],
         routeCoords
       );
+      snappedPlane = snap.point;
+
+      // Compute heading FROM the route, not from the API.
+      // Why: FR24's `track` field can be stale right after takeoff (still
+      // showing taxi/runway heading) or even reversed for some flights.
+      // The route's local bearing is a better source of truth — it's
+      // what direction the plane SHOULD be flying to make progress.
+      // Falls back to the API heading if we somehow can't get a next vertex.
+      const nextIdx = Math.min(snap.index + 1, routeCoords.length - 1);
+      const routeHeading = (snap.index < routeCoords.length - 1)
+        ? bearing(snappedPlane, routeCoords[nextIdx])
+        : (flight.position.heading ?? 0);
 
       markersRef.current.plane = new maplibregl.Marker({
-        element: makePlaneElement(flight.position.heading ?? 0),
+        element: makePlaneElement(routeHeading),
         anchor: 'center',
       })
         .setLngLat(snappedPlane)
@@ -219,9 +237,21 @@ function makeDotElement(color, label) {
 function makePlaneElement(headingDeg) {
   const el = document.createElement('div');
   el.className = 'ft-map-plane';
-  // Airplane glyph naturally points up-right (~45°). Subtract that so 0° = north.
-  el.style.transform = `rotate(${headingDeg - 45}deg)`;
-  el.innerHTML = '✈';
+
+  // Use an inline SVG of an airplane that points NORTH (heading 0°).
+  // This way `rotate(headingDeg)` directly equals the compass heading
+  // without any font-dependent offset hacks. The previous version used
+  // the Unicode glyph "✈" whose orientation depends on the system font
+  // — different fonts render it pointing in different directions, so
+  // subtracting a fixed offset was unreliable.
+  el.innerHTML = `
+    <svg viewBox="0 0 24 24" width="24" height="24"
+         style="display:block;transform:rotate(${headingDeg}deg);transition:transform 300ms ease-out;"
+         aria-hidden="true">
+      <path fill="currentColor"
+            d="M12 2 L14.5 11 L22 13 L22 14.5 L14.5 13.5 L13 21 L14.5 22 L14.5 23 L9.5 23 L9.5 22 L11 21 L9.5 13.5 L2 14.5 L2 13 L9.5 11 Z"/>
+    </svg>
+  `;
   return el;
 }
 
@@ -280,18 +310,40 @@ function greatCircle([lon1, lat1], [lon2, lat2], segments = 64) {
 }
 
 /**
- * Given a point and a polyline, return the closest point on the polyline.
+ * Given a point and a polyline, return:
+ *   { point: [lon, lat], index: int }
+ * — the closest vertex on the polyline AND its index, so the caller can
+ * compute the route's bearing at that vertex.
+ *
  * Used to snap the plane marker onto the route line for visual cleanliness.
  * Quick-and-dirty: just finds the nearest vertex (sufficient with 64 segments).
  */
 function closestPointOnPath([lon, lat], path) {
-  let best = path[0];
+  let bestIdx = 0;
   let bestDist = Infinity;
-  for (const p of path) {
+  for (let i = 0; i < path.length; i++) {
+    const p = path[i];
     const dLon = p[0] - lon;
     const dLat = p[1] - lat;
     const d = dLon * dLon + dLat * dLat;
-    if (d < bestDist) { bestDist = d; best = p; }
+    if (d < bestDist) { bestDist = d; bestIdx = i; }
   }
-  return best;
+  return { point: path[bestIdx], index: bestIdx };
+}
+
+/**
+ * Initial bearing (in degrees, 0 = north, clockwise) from point A to point B.
+ * Used to rotate the plane glyph along the route direction, which is more
+ * reliable than the live API's heading field — that can be stale (still
+ * showing taxi direction) or missing right after takeoff.
+ */
+function bearing([lon1, lat1], [lon2, lat2]) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const toDeg = (rad) => (rad * 180) / Math.PI;
+  const φ1 = toRad(lat1), φ2 = toRad(lat2);
+  const Δλ = toRad(lon2 - lon1);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) -
+            Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }

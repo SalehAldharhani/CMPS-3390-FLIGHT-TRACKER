@@ -66,6 +66,12 @@ export async function fetchFlightDetails(flightNumber, opts) {
   return Flight.fromApi(json);
 }
 
+/** GET /api/flights/:flightNumber/last -> Flight (most recent leg, status=LANDED) */
+export async function fetchLastFlight(flightNumber, opts) {
+  const json = await request(`/flights/${encodeURIComponent(flightNumber)}/last`, opts);
+  return Flight.fromApi(json);
+}
+
 /** GET /api/flights/search?q=... -> Flight[] */
 export async function searchFlights(query, opts) {
   const json = await request(`/flights/search?q=${encodeURIComponent(query)}`, opts);

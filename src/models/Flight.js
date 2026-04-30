@@ -34,13 +34,27 @@ export default class Flight {
   }
 
   // ---- Status helpers -----------------------------------------------------
-  get isEnRoute()   { return this.status === 'EN_ROUTE'; }
+  get isEnRoute()   { return this.status === 'EN_ROUTE' && !this.isOnGround; }
   get isLanded()    { return this.status === 'LANDED'; }
   get isCancelled() { return this.status === 'CANCELLED'; }
   get isDelayed()   { return this.status === 'DELAYED'; }
 
+  /**
+   * True when the API reports the flight as live but the position data
+   * shows the plane isn't moving (altitude = 0 AND ground speed = 0).
+   * Happens for flights tracked on the ground right before takeoff or
+   * after landing — FR24 still returns them in /live/flight-positions
+   * but with zeroed values for a few minutes.
+   */
+  get isOnGround() {
+    if (!this.position) return false;
+    return (this.position.altitude ?? 0) === 0
+        && (this.position.groundSpeed ?? 0) === 0;
+  }
+
   /** Returns one of: 'ontime' | 'delay' | 'cancel' | 'board' for CSS theming */
   get statusToken() {
+    if (this.isOnGround) return 'board';
     switch (this.status) {
       case 'CANCELLED': return 'cancel';
       case 'DELAYED':   return 'delay';
@@ -51,6 +65,7 @@ export default class Flight {
   }
 
   get statusLabel() {
+    if (this.isOnGround) return 'On the ground';
     const map = {
       EN_ROUTE: 'En route',
       SCHEDULED: 'Scheduled',

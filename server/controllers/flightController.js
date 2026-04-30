@@ -19,6 +19,7 @@ import { validateFlightNumber } from '../../src/validators.js';
 import {
   fetchFlightFromProvider,
   fetchFlightDetailsFromProvider,
+  fetchLastFlightFromProvider,
   searchFlightsFromProvider,
 } from '../services/flightService.js';
 
@@ -52,6 +53,35 @@ export async function getFlightDetails(req, res, next) {
     const flight = await fetchFlightDetailsFromProvider(result.value);
     if (!flight) {
       return res.status(404).json({ error: `Flight ${result.value} not found.` });
+    }
+
+    res.json(flight);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/flights/:flightNumber/last
+ *
+ * Fallback endpoint for when /flights/:flightNumber returns 404 (flight not
+ * currently airborne). Looks up the most recent leg from /flight-summary/full
+ * and returns a Flight-shaped object with status='LANDED'.
+ *
+ * Returns 404 if there's no recent leg either (genuinely unknown flight).
+ */
+export async function getLastFlight(req, res, next) {
+  try {
+    const result = validateFlightNumber(req.params.flightNumber);
+    if (!result.ok) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    const flight = await fetchLastFlightFromProvider(result.value);
+    if (!flight) {
+      return res.status(404).json({
+        error: `No recent flight history for ${result.value}.`,
+      });
     }
 
     res.json(flight);

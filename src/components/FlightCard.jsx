@@ -24,6 +24,44 @@ export default function FlightCard({ flightNumber }) {
   }
 
   if (error) {
+    // Special-case 404: the flight isn't currently airborne. Don't show this
+    // as a scary "couldn't load" — invite the user to see the last leg by
+    // clicking through to the detail page, which has the fallback prompt.
+    if (error.status === 404) {
+      return (
+        <div className="ft-card ft-card--idle">
+          <header className="ft-card__top">
+            <span className="ft-card__num mono">{flightNumber}</span>
+            <span className="ft-card__status ft-card__status--board">Not in the air</span>
+          </header>
+          <p className="ft-card__idle-msg">
+            This flight isn't currently being tracked live. Click below to see
+            its last completed leg.
+          </p>
+          <footer className="ft-card__actions">
+            <Link to={`/flight/${flightNumber}`} className="ft-card__link">
+              View last flight →
+            </Link>
+            <button
+              className="ft-card__refresh"
+              onClick={refetch}
+              disabled={loading}
+              aria-label={`Refresh ${flightNumber}`}
+              title="Check if it's airborne now"
+            >
+              {loading ? '…' : '↻'}
+            </button>
+            <button
+              className="ft-card__remove"
+              onClick={() => untrackFlight(flightNumber)}
+            >
+              Untrack
+            </button>
+          </footer>
+        </div>
+      );
+    }
+
     return (
       <div className="ft-card ft-card--error">
         <div>

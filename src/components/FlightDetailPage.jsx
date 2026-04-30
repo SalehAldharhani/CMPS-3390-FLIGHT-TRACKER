@@ -7,15 +7,47 @@ import ShareLinkButton from './ShareLinkButton.jsx';
 
 export default function FlightDetailPage() {
   const { flightNumber } = useParams();
-  const { flight, loading, error, refetch } = useFlight(flightNumber, {
+  const {
+    flight, loading, error, refetch,
+    needsConfirmation, confirmFallback, declineFallback,
+  } = useFlight(flightNumber, {
     // No auto-polling — single fetch on mount. Use the Refresh button to
     // force an update. Saves FR24 credits and avoids 429s during the demo.
     detailed: true,        // hit /details for departure time + runway info
+    offerFallback: true,   // if not airborne, prompt to show last leg
   });
   const { isTracked, trackFlight, untrackFlight } = useFlights();
 
   if (loading && !flight) {
     return <div className="ft-detail__msg">Loading flight {flightNumber}…</div>;
+  }
+
+  if (needsConfirmation) {
+    return (
+      <div className="ft-detail__msg ft-detail__msg--prompt">
+        <h2>This flight isn't currently airborne</h2>
+        <p>
+          Flight <strong className="mono">{flightNumber}</strong> isn't being
+          tracked live right now. Would you like to see its last completed leg
+          instead?
+        </p>
+        <p className="ft-detail__msg-meta">
+          (Looks up the most recent flight in the past 24 hours. Costs one extra credit.)
+        </p>
+        <div className="ft-detail__msg-actions">
+          <button
+            className="ft-detail__btn ft-detail__btn--primary"
+            onClick={confirmFallback}
+          >
+            Yes, show last flight
+          </button>
+          <button className="ft-detail__btn" onClick={declineFallback}>
+            No thanks
+          </button>
+        </div>
+        <Link to="/" className="ft-detail__msg-back">← Back to search</Link>
+      </div>
+    );
   }
 
   if (error) {
@@ -37,7 +69,12 @@ export default function FlightDetailPage() {
     <div className="ft-detail">
       <header className="ft-detail__head">
         <div>
-          <p className="ft-detail__eyebrow mono">{flight.airline}</p>
+          <p className="ft-detail__eyebrow mono">
+            {flight.airline}
+            {flight.isHistorical && (
+              <span className="ft-detail__historical-badge">Last flight</span>
+            )}
+          </p>
           <h1 className="ft-detail__num mono">{flight.flightNumber}</h1>
           <p className="ft-detail__route">
             <strong>{flight.origin?.iata}</strong>
@@ -96,11 +133,11 @@ export default function FlightDetailPage() {
           flight.aircraft?.registration && `Reg ${flight.aircraft.registration}`,
         ]} />
         <InfoTile label="Position" lines={
-          flight.position
-            ? [`Alt ${flight.position.altitude} ft`,
+          (!flight.position || flight.isOnGround)
+            ? ['On the ground']
+            : [`Alt ${flight.position.altitude} ft`,
                `Spd ${flight.position.groundSpeed} kts`,
                `Hdg ${flight.position.heading}°`]
-            : ['On the ground']
         } />
       </section>
 

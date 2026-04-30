@@ -63,8 +63,9 @@ const FR24_BASE    = 'https://fr24api.flightradar24.com/api';
 
 // Cache TTLs — 60 seconds is short enough that "live" data still feels live,
 // long enough to absorb refresh/navigation traffic without extra credits.
-const LIVE_TTL_MS    = 60_000;
-const SUMMARY_TTL_MS = 5 * 60_000; // summary is more stable, cache longer
+const LIVE_TTL_MS       = 60_000;
+const SUMMARY_TTL_MS    = 5 * 60_000;       // summary is more stable, cache longer
+const HISTORICAL_TTL_MS = 24 * 60 * 60_000; // 24h — historical legs don't change
 
 function fr24Headers() {
   return {
@@ -268,7 +269,92 @@ async function fetchFlightSummary(flightNumber) {
   }
 }
 
-/** Search by flight number — uses live-positions, same cache. */
+/**
+ * Fetch the MOST RECENT leg of a flight from /flight-summary/full.
+ *
+ * Used as a fallback when /live/flight-positions returns nothing — meaning
+ * the flight isn't currently airborne. Lets us show a "last flight" view for
+ * planes that just landed or aren't running today.
+ *
+ * Returns a Flight-shaped object with status='LANDED' and plane position
+ * pinned to the destination airport, or null if no recent leg exists.
+ *
+ * Cached aggressively (24h) since historical data doesn't change and we
+ * don't want to keep paying for the same lookup.
+ */
+export async function fetchLastFlightFromProvider(flightNumber) {
+  if (!FR24_API_KEY) throw new Error('FLIGHTRADAR24_API_KEY is not set in .env');
+
+  const cacheKey = `last:${flightNumber}`;
+  const cached = cacheGet(cacheKey);
+  if (cached !== null) return cached;
+
+  checkRateLimit();
+
+  const summary = await fetchFlightSummary(flightNumber);
+  if (!summary) {
+    cacheSet(cacheKey, null, HISTORICAL_TTL_MS);
+    return null;
+  }
+
+  // Use the same local airport database as live flights — summary endpoint
+  // returns IATA codes but no coordinates.
+  const origin      = lookupAirport(summary.orig_iata);
+  const destination = lookupAirport(summary.dest_iata_actual ?? summary.dest_iata);
+
+  // Build a Flight-shaped object. The big differences from live:
+  //   - status is LANDED (or SCHEDULED if no takeoff time yet — rare in practice)
+  //   - position is pinned to the destination (the plane is parked there)
+  //   - departure.actual and arrival.estimated come from summary fields
+  const status = summary.flight_ended ? 'LANDED' : 'EN_ROUTE';
+
+  const flight = {
+    flightNumber: summary.flight ?? flightNumber,
+    airline:      summary.painted_as ?? summary.operating_as ?? 'Unknown',
+    status,
+
+    origin,
+    destination,
+
+    departure: {
+      scheduled: null,
+      actual:    summary.datetime_takeoff ?? null,
+      gate:      null,
+      runway:    summary.runway_takeoff ?? null,
+    },
+    arrival: {
+      scheduled: null,
+      estimated: summary.datetime_landed ?? null,
+      gate:      null,
+      runway:    summary.runway_landed ?? null,
+    },
+
+    // Plane sits at the destination — it's done flying.
+    // We give it a nominal heading/speed so the map doesn't crash on missing fields.
+    position: (destination.lat !== 0 || destination.lon !== 0)
+      ? {
+          lat:         destination.lat,
+          lon:         destination.lon,
+          altitude:    0,
+          heading:     0,
+          groundSpeed: 0,
+        }
+      : null,
+
+    aircraft: {
+      model:        summary.type ?? 'Unknown',
+      registration: summary.reg  ?? 'N/A',
+    },
+
+    // Hint to the frontend that this is historical, not live.
+    isHistorical: true,
+  };
+
+  cacheSet(cacheKey, flight, HISTORICAL_TTL_MS);
+  return flight;
+}
+
+
 export async function searchFlightsFromProvider(query) {
   if (!FR24_API_KEY) throw new Error('FLIGHTRADAR24_API_KEY is not set in .env');
 
