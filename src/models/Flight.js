@@ -1,58 +1,26 @@
-/**
- * Flight - client-side data model class
- * --------------------------------------------------------------------------
- * Wraps a raw flight object returned from /api/flights/:flightNumber and
- * exposes computed properties + helpers. Used by FlightCard, FlightDetail,
- * map components, etc.
- *
- * Required by spec: "Client-Side Data Model Classes"
- *
- * SHAPE OF RAW DATA (contract with backend):
- * {
- *   flightNumber: "AA100",
- *   airline:      "American Airlines",
- *   status:       "EN_ROUTE" | "SCHEDULED" | "LANDED" | "CANCELLED" | "DELAYED",
- *   origin:       { iata: "JFK", city: "New York",   lat: 40.6413, lon: -73.7781 },
- *   destination:  { iata: "LHR", city: "London",     lat: 51.4700, lon: -0.4543  },
- *   departure:    { scheduled: ISO, actual: ISO|null, gate: "B22"|null },
- *   arrival:      { scheduled: ISO, estimated: ISO|null, gate: "T5"|null },
- *   position:     { lat, lon, altitude, heading, groundSpeed }, // null if not airborne
- *   aircraft:     { model: "B777", registration: "N123AA" }
- * }
- */
 export default class Flight {
   constructor(raw) {
     this.raw = raw ?? {};
     Object.assign(this, raw);
   }
 
-  // ---- Identity -----------------------------------------------------------
   get id() { return this.flightNumber; }
 
   get displayName() {
     return `${this.airline ?? 'Unknown'} ${this.flightNumber ?? ''}`.trim();
   }
 
-  // ---- Status helpers -----------------------------------------------------
   get isEnRoute()   { return this.status === 'EN_ROUTE' && !this.isOnGround; }
   get isLanded()    { return this.status === 'LANDED'; }
   get isCancelled() { return this.status === 'CANCELLED'; }
   get isDelayed()   { return this.status === 'DELAYED'; }
 
-  /**
-   * True when the API reports the flight as live but the position data
-   * shows the plane isn't moving (altitude = 0 AND ground speed = 0).
-   * Happens for flights tracked on the ground right before takeoff or
-   * after landing — FR24 still returns them in /live/flight-positions
-   * but with zeroed values for a few minutes.
-   */
   get isOnGround() {
     if (!this.position) return false;
     return (this.position.altitude ?? 0) === 0
         && (this.position.groundSpeed ?? 0) === 0;
   }
 
-  /** Returns one of: 'ontime' | 'delay' | 'cancel' | 'board' for CSS theming */
   get statusToken() {
     if (this.isOnGround) return 'board';
     switch (this.status) {
@@ -76,9 +44,6 @@ export default class Flight {
     return map[this.status] ?? 'Unknown';
   }
 
-  // ---- Derived numbers ----------------------------------------------------
-
-  /** Minutes between scheduled and actual/estimated arrival. */
   get delayMinutes() {
     const sched = this.arrival?.scheduled;
     const est = this.arrival?.estimated ?? this.arrival?.scheduled;
@@ -86,19 +51,7 @@ export default class Flight {
     return Math.round((new Date(est) - new Date(sched)) / 60000);
   }
 
-  /**
-   * Percentage of the flight completed (0-100).
-   *
-   * Strategy (in order of preference):
-   *   1. POSITION-BASED — if we have origin/destination coords and a current
-   *      position, compute distance traveled vs. total route distance. This
-   *      works for live flights even without scheduled times. Most accurate.
-   *   2. TIME-BASED — if positions aren't available but departure + arrival
-   *      times are, fall back to elapsed/total time.
-   *   3. ZERO — if we have neither, just return 0.
-   */
   get progressPercent() {
-    // Try position-based first (most reliable for live flights)
     const o = this.origin;
     const d = this.destination;
     const p = this.position;
@@ -111,7 +64,6 @@ export default class Flight {
       }
     }
 
-    // Fallback to time-based
     const dep = this.departure?.actual ?? this.departure?.scheduled;
     const arr = this.arrival?.estimated ?? this.arrival?.scheduled;
     if (!dep || !arr) return 0;
@@ -121,25 +73,19 @@ export default class Flight {
     return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
   }
 
-  // ---- Routing ------------------------------------------------------------
   get routeLabel() {
     const o = this.origin?.iata ?? '???';
     const d = this.destination?.iata ?? '???';
     return `${o} → ${d}`;
   }
 
-  // ---- Serialisation ------------------------------------------------------
   toJSON() { return { ...this.raw }; }
 
   static fromApi(json) { return new Flight(json); }
 }
 
-/**
- * Great-circle distance between two lat/lon points (in km).
- * Used by progressPercent to compute "how far through the route is the plane?"
- */
 function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Earth's radius in km
+  const R = 6371;
   const toRad = (deg) => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);

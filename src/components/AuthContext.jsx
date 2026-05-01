@@ -1,11 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-/**
- * AuthContext
- * --------------------------------------------------------------------------
- * Local-only "accounts" stored in localStorage.
- */
-
 const USERS_KEY   = 'ft.users.v1';
 const CURRENT_KEY = 'ft.currentUser.v1';
 const AuthContext = createContext(null);
@@ -37,10 +31,8 @@ function saveCurrent(username) {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(loadCurrent);
 
-  // Persist whenever the current user changes.
   useEffect(() => { saveCurrent(currentUser); }, [currentUser]);
 
-  /** Returns { ok: true } or { ok: false, error: '...' } */
   const signUp = useCallback(({ username, password }) => {
     const users = loadUsers();
     if (users[username]) {
@@ -52,7 +44,6 @@ export function AuthProvider({ children }) {
     return { ok: true };
   }, []);
 
-  /** Returns { ok: true } or { ok: false, error: '...' } */
   const signIn = useCallback(({ username, password }) => {
     const users = loadUsers();
     const user = users[username];

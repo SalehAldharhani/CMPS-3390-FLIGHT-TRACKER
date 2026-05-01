@@ -1,24 +1,5 @@
-/**
- * weatherService.js
- * --------------------------------------------------------------------------
- * OWNER: Clonexstax
- *
- * Calls Open-Meteo (https://open-meteo.com).
- *
- * EXPECTED RETURN SHAPE (must match src/models/Weather.js):
- *   {
- *     location, tempC, tempF, condition, icon,
- *     windKph, windDirection, visibilityKm, precipitationMm, updatedAt
- *   }
- */
-
 const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
 
-/**
- * Map a WMO weather code (what Open-Meteo returns) to a human-readable
- * condition string. The full table is at https://open-meteo.com/en/docs
- * under "Weather Variable Documentation". This covers the common cases.
- */
 function describeWeatherCode(code) {
   const map = {
     0:  'Clear',
@@ -53,14 +34,12 @@ function describeWeatherCode(code) {
   return map[code] ?? 'Unknown';
 }
 
-/** Convert wind direction in degrees to a compass label (N, NE, E, ...) */
 function degreesToCompass(deg) {
   if (deg === null || deg === undefined) return '';
   const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   return dirs[Math.round(((deg % 360) / 45)) % 8];
 }
 
-/** A short slug we can use for an icon name on the frontend if desired. */
 function weatherCodeToIcon(code) {
   if (code === 0)                    return 'clear';
   if (code === 1 || code === 2)      return 'partly-cloudy';
@@ -74,13 +53,7 @@ function weatherCodeToIcon(code) {
   return 'unknown';
 }
 
-/**
- * Fetch current weather for a single lat/lon.
- * Throws on network errors or non-200 responses.
- */
 export async function fetchWeatherFromProvider({ lat, lon }) {
-  // Open-Meteo's "current" endpoint returns observations for right now.
-  // We request all the fields the frontend needs in one request.
   const params = new URLSearchParams({
     latitude:        String(lat),
     longitude:       String(lon),
@@ -103,7 +76,6 @@ export async function fetchWeatherFromProvider({ lat, lon }) {
   const tempC = c.temperature_2m;
   const code  = c.weather_code;
 
-  // Open-Meteo returns visibility in METERS — convert to km.
   const visibilityKm = c.visibility != null
     ? Math.round((c.visibility / 1000) * 10) / 10
     : null;

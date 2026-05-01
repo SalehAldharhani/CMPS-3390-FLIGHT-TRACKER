@@ -11,10 +11,8 @@ export default function FlightDetailPage() {
     flight, loading, error, refetch,
     needsConfirmation, confirmFallback, declineFallback,
   } = useFlight(flightNumber, {
-    // No auto-polling — single fetch on mount. Use the Refresh button to
-    // force an update. Saves FR24 credits and avoids 429s during the demo.
-    detailed: true,        // hit /details for departure time + runway info
-    offerFallback: true,   // if not airborne, prompt to show last leg
+    detailed: true,
+    offerFallback: true,
   });
   const { isTracked, trackFlight, untrackFlight } = useFlights();
 

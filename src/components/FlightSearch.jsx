@@ -2,14 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { validateFlightNumber } from '../validators.js';
 
-/**
- * FlightSearch
- * --------------------------------------------------------------------------
- * Lets the user enter a flight number, validates it client-side, and
- * navigates to /flight/:flightNumber on submit.
- *
- * The same validator is re-used on the server to enforce the rule.
- */
 export default function FlightSearch() {
   const [value, setValue] = useState('');
   const [error, setError] = useState(null);

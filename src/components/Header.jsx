@@ -1,9 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 
-/**
- * App header / nav bar.
- */
 export default function Header() {
   const { isSignedIn, currentUser, signOut } = useAuth();
   const navigate = useNavigate();

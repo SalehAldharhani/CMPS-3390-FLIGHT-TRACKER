@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchWeather } from '../apiClient.js';
 
-/**
- * WeatherPanel
- * --------------------------------------------------------------------------
- * Pulls weather for both origin and destination airports of a flight and
- * renders side-by-side cards.
- *
- * Demonstrates: parallel async fetches with Promise.all, abort handling.
- * Spec items: "3rd-party APIs/integrations" (via backend), state-handling
- * with async/await.
- */
 export default function WeatherPanel({ flight }) {
   const [origin, setOrigin] = useState(null);
   const [dest, setDest] = useState(null);
