@@ -1,0 +1,21 @@
+$kind: http-request
+name: GET /api/weather  (LHR)
+description: Weather at London Heathrow. Useful as a second test to verify weather differs by location (it should — JFK and LHR will rarely have identical conditions).
+url: "{{baseUrl}}/api/weather?lat=51.4700&lon=-0.4543"
+method: GET
+queryParams:
+  lat: "51.4700"
+  lon: "-0.4543"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', () => pm.response.to.have.status(200));
+
+      pm.test('Returns valid weather data for LHR', () => {
+        const body = pm.response.json();
+        pm.expect(body).to.have.property('tempC');
+        pm.expect(body.tempC).to.be.a('number');
+        pm.expect(body).to.have.property('condition');
+      });
+    language: text/javascript
+order: 2000

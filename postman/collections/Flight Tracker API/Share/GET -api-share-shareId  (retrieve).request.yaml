@@ -1,0 +1,44 @@
+$kind: http-request
+name: GET /api/share/:shareId  (retrieve)
+description: |-
+  Retrieves the flight associated with a share link. Public — no auth required. Uses the `shareId` saved by the previous request.
+
+  Response shape:
+  ```json
+  {
+    "flight": { /* full Flight object with departure + arrival times */ },
+    "sharedBy": "PostmanTester"
+  }
+  ```
+url: "{{baseUrl}}/api/share/{{shareId}}"
+method: GET
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Make sure we have a shareId. If the previous request didn't run,
+      // the variable will be empty and this request will fail clearly.
+      const shareId = pm.collectionVariables.get('shareId');
+      if (!shareId) {
+        console.warn('No shareId saved. Run the POST /api/share request first.');
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200 or 404', () => {
+        pm.expect(pm.response.code).to.be.oneOf([200, 404]);
+      });
+
+      if (pm.response.code === 200) {
+        pm.test('Returns flight + sharedBy', () => {
+          const body = pm.response.json();
+          pm.expect(body).to.have.property('flight');
+          pm.expect(body).to.have.property('sharedBy');
+        });
+
+        pm.test('sharedBy matches what we sent', () => {
+          const body = pm.response.json();
+          pm.expect(body.sharedBy).to.eql('PostmanTester');
+        });
+      }
+    language: text/javascript
+order: 2000

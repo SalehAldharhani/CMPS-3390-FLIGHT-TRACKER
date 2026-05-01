@@ -1,0 +1,57 @@
+{
+	"id": "69f4286842082bf90cf4123d",
+	"name": "Flight Tracker API",
+	"timestamp": "2026-05-01T04:13:31.759Z",
+	"collection_id": "1aDEFE00cd55beefB41690bF",
+	"folder_id": 0,
+	"environment_id": "0",
+	"totalPass": 30,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2026-05-01T04:13:28.244Z",
+	"totalFail": 0,
+	"results": [],
+	"count": 1,
+	"totalTime": 0,
+	"collection": {
+		"requests": [
+			{
+				"id": "c93e4DBAcca551EdB2F213Aa"
+			},
+			{
+				"id": "b2a47AebDc151df1d22bc6Bf"
+			},
+			{
+				"id": "ac9cf8a97296FEBa15be34B7"
+			},
+			{
+				"id": "deD2bCEAC5521CAEF3da12cB"
+			},
+			{
+				"id": "1C63b8253F5A47067fdba86A"
+			},
+			{
+				"id": "1109D06d8BDbdDa5170Ed3DC"
+			},
+			{
+				"id": "21fd12E8fCD9Cf13ADAddCF9"
+			},
+			{
+				"id": "34De4fCbC5E75e52ecdCdF89"
+			},
+			{
+				"id": "Fa71dED6EF1BE59C2f36E6dF"
+			},
+			{
+				"id": "8A12d2C481Bb05Ceacf7b08a"
+			},
+			{
+				"id": "3DE24cBd16CBBEB93DCA13b1"
+			},
+			{
+				"id": "5ccdcF7B9b7DBc1DD2899cA1"
+			}
+		]
+	}
+}

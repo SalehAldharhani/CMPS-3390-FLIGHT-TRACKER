@@ -1,0 +1,39 @@
+$kind: http-request
+name: POST /api/share  (create link)
+description: |-
+  Creates a shareable link for a flight. The `sharedBy` username is optional; when provided, the public share page shows 'PostmanTester will arrive in [city] at [time].'
+
+  **The shareId returned by this request is automatically saved into a collection variable**, so the next request (Retrieve shared flight) will use it.
+url: "{{baseUrl}}/api/share"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "flightNumber": "{{demoFlight}}",
+      "sharedBy": "PostmanTester"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200 or 404', () => {
+        // 200 if the demo flight is airborne; 404 if it isn't.
+        pm.expect(pm.response.code).to.be.oneOf([200, 404]);
+      });
+
+      if (pm.response.code === 200) {
+        pm.test('Body has shareId and url', () => {
+          const body = pm.response.json();
+          pm.expect(body).to.have.property('shareId');
+          pm.expect(body).to.have.property('url');
+        });
+
+        // Save the shareId so the next request in this folder can use it.
+        const body = pm.response.json();
+        pm.collectionVariables.set('shareId', body.shareId);
+        console.log('Saved shareId for next request:', body.shareId);
+      }
+    language: text/javascript
+order: 1000

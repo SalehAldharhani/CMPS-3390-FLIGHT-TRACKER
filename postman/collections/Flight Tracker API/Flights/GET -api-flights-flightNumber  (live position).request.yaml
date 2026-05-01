@@ -1,0 +1,53 @@
+$kind: http-request
+name: GET /api/flights/:flightNumber  (live position)
+description: |-
+  Returns the live position of a flight. **1 FR24 credit per cache miss.**
+
+  Response shape:
+  ```json
+  {
+    "flightNumber": "AA100",
+    "airline": "AAL",
+    "status": "EN_ROUTE",
+    "origin": { "iata": "JFK", "city": "New York", "lat": 40.64, "lon": -73.78 },
+    "destination": { "iata": "LHR", ... },
+    "position": { "lat": 51.0, "lon": -30.0, "altitude": 36000, "heading": 78, "groundSpeed": 523 },
+    "aircraft": { "model": "B77W", "registration": "N731AN" }
+  }
+  ```
+
+  Returns 404 if the flight isn't currently airborne.
+url: "{{baseUrl}}/api/flights/{{demoFlight}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      // 200 means flight found and airborne; 404 means not airborne (acceptable)
+      pm.test('Status is 200 or 404', () => {
+        pm.expect(pm.response.code).to.be.oneOf([200, 404]);
+      });
+
+      if (pm.response.code === 200) {
+        pm.test('Body has flight number, route, and position', () => {
+          const body = pm.response.json();
+          pm.expect(body).to.have.property('flightNumber');
+          pm.expect(body).to.have.property('origin');
+          pm.expect(body).to.have.property('destination');
+          pm.expect(body.origin).to.have.property('iata');
+          pm.expect(body.destination).to.have.property('iata');
+        });
+
+        pm.test('Status is one of the expected values', () => {
+          const body = pm.response.json();
+          pm.expect(body.status).to.be.oneOf([
+            'EN_ROUTE', 'SCHEDULED', 'LANDED', 'CANCELLED', 'DELAYED'
+          ]);
+        });
+      } else {
+        pm.test('404 body has an error message', () => {
+          const body = pm.response.json();
+          pm.expect(body).to.have.property('error');
+        });
+      }
+    language: text/javascript
+order: 1000

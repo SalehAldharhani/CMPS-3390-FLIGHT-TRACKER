@@ -1,0 +1,27 @@
+$kind: http-request
+name: GET /api/flights/:flightNumber/details  (live + summary)
+description: Returns live position + flight-summary data merged. **2 FR24 credits per cache miss** (one for live, one for summary). Used by the detail page to show real departure time and runway.
+url: "{{baseUrl}}/api/flights/{{demoFlight}}/details"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200 or 404', () => {
+        pm.expect(pm.response.code).to.be.oneOf([200, 404]);
+      });
+
+      if (pm.response.code === 200) {
+        pm.test('Includes departure information', () => {
+          const body = pm.response.json();
+          pm.expect(body).to.have.property('departure');
+          pm.expect(body.departure).to.have.property('actual');
+          pm.expect(body.departure).to.have.property('runway');
+        });
+
+        pm.test('Includes arrival ETA', () => {
+          const body = pm.response.json();
+          pm.expect(body).to.have.property('arrival');
+        });
+      }
+    language: text/javascript
+order: 2000

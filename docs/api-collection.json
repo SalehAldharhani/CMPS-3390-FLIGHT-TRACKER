@@ -1,0 +1,533 @@
+{
+  "info": {
+    "_postman_id": "cmps3390-flight-tracker-api-tests",
+    "name": "Flight Tracker API",
+    "description": "## CMPS-3390 Project 3 — Flight Tracker API\n\nComplete test collection for the Flight Tracker backend (Express + Node).\n\n### Setup\n\n1. Make sure the server is running locally: `npm run server` (defaults to port 3001).\n2. Verify the `baseUrl` collection variable below — change it if you're running on a different port.\n3. You must have a valid `FLIGHTRADAR24_API_KEY` in your `.env` for the flight endpoints to return real data.\n\n### How to run\n\n- **Single request:** click any endpoint in the sidebar and hit **Send**.\n- **Whole collection:** click **Run collection** in the top-right of this collection. Each request has a Tests script that checks the response status and structure.\n\n### Folders\n\n- **Health** — server heartbeat\n- **Flights** — live, detailed, historical, and search endpoints\n- **Weather** — Open-Meteo proxy\n- **Share** — public share link create + retrieve\n\n### Notes\n\n- Live flight endpoints only return data for flights that are **currently airborne**. If a request returns 404, that's not a bug — pick a different flight from flightradar24.com.\n- The `/last` endpoint returns the most recent historical leg, which works even when the flight isn't airborne. Its 24h cache means repeat lookups don't burn FR24 credits.\n- The shareId in the Share folder is captured automatically from the create request, so you can run the folder end-to-end.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "demoFlight",
+      "value": "AA100",
+      "type": "string",
+      "description": "A long-haul flight number for testing. Pick one currently airborne on flightradar24.com."
+    },
+    {
+      "key": "shareId",
+      "value": "",
+      "type": "string",
+      "description": "Auto-populated by the 'Create share link' request"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Response is JSON with ok=true', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('ok', true);",
+                  "  pm.expect(body).to.have.property('ts');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Server heartbeat. Returns `{ ok: true, ts: <unix-ms> }`. Use this to verify the server is up before running other tests."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Flights",
+      "item": [
+        {
+          "name": "GET /api/flights/:flightNumber  (live position)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// 200 means flight found and airborne; 404 means not airborne (acceptable)",
+                  "pm.test('Status is 200 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Body has flight number, route, and position', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('flightNumber');",
+                  "    pm.expect(body).to.have.property('origin');",
+                  "    pm.expect(body).to.have.property('destination');",
+                  "    pm.expect(body.origin).to.have.property('iata');",
+                  "    pm.expect(body.destination).to.have.property('iata');",
+                  "  });",
+                  "",
+                  "  pm.test('Status is one of the expected values', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.be.oneOf([",
+                  "      'EN_ROUTE', 'SCHEDULED', 'LANDED', 'CANCELLED', 'DELAYED'",
+                  "    ]);",
+                  "  });",
+                  "} else {",
+                  "  pm.test('404 body has an error message', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('error');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/{{demoFlight}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights", "{{demoFlight}}"]
+            },
+            "description": "Returns the live position of a flight. **1 FR24 credit per cache miss.**\n\nResponse shape:\n```json\n{\n  \"flightNumber\": \"AA100\",\n  \"airline\": \"AAL\",\n  \"status\": \"EN_ROUTE\",\n  \"origin\": { \"iata\": \"JFK\", \"city\": \"New York\", \"lat\": 40.64, \"lon\": -73.78 },\n  \"destination\": { \"iata\": \"LHR\", ... },\n  \"position\": { \"lat\": 51.0, \"lon\": -30.0, \"altitude\": 36000, \"heading\": 78, \"groundSpeed\": 523 },\n  \"aircraft\": { \"model\": \"B77W\", \"registration\": \"N731AN\" }\n}\n```\n\nReturns 404 if the flight isn't currently airborne."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/flights/:flightNumber/details  (live + summary)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Includes departure information', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('departure');",
+                  "    pm.expect(body.departure).to.have.property('actual');",
+                  "    pm.expect(body.departure).to.have.property('runway');",
+                  "  });",
+                  "",
+                  "  pm.test('Includes arrival ETA', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('arrival');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/{{demoFlight}}/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights", "{{demoFlight}}", "details"]
+            },
+            "description": "Returns live position + flight-summary data merged. **2 FR24 credits per cache miss** (one for live, one for summary). Used by the detail page to show real departure time and runway."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/flights/:flightNumber/last  (historical fallback)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Marked as historical', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('isHistorical', true);",
+                  "  });",
+                  "",
+                  "  pm.test('Status is LANDED for completed flights', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.be.oneOf(['LANDED', 'EN_ROUTE']);",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/{{demoFlight}}/last",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights", "{{demoFlight}}", "last"]
+            },
+            "description": "Returns the most recent leg of a flight from the past 24 hours, even if it's not currently airborne. Useful for showing 'last flight' info to users.\n\n**24h cache** — repeated lookups of the same flight number don't burn additional credits."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/flights/search?q=...",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Response is an array', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Each result has a flight number', () => {",
+                  "  const body = pm.response.json();",
+                  "  body.forEach(f => {",
+                  "    pm.expect(f).to.have.property('flightNumber');",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/search?q={{demoFlight}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{demoFlight}}"
+                }
+              ]
+            },
+            "description": "Search for flights by flight number. Returns an array (possibly empty) of matching airborne flights. The search is matched server-side via FR24's flight-number filter."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/flights/INVALID  (validation test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 (bad request)', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Body contains an error message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/!@#$%",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights", "!@#$%"]
+            },
+            "description": "Tests server-side input validation. The flight number `!@#$%` is invalid (contains symbols). The server's `validateFlightNumber` should reject this with HTTP 400."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Weather",
+      "item": [
+        {
+          "name": "GET /api/weather  (JFK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Body has temperature data', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('tempC');",
+                  "  pm.expect(body).to.have.property('tempF');",
+                  "  pm.expect(body.tempC).to.be.a('number');",
+                  "  pm.expect(body.tempF).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test('Body has wind information', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('windKph');",
+                  "  pm.expect(body).to.have.property('windDirection');",
+                  "});",
+                  "",
+                  "pm.test('Condition is a non-empty string', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.condition).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/weather?lat=40.6413&lon=-73.7781",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "weather"],
+              "query": [
+                { "key": "lat", "value": "40.6413" },
+                { "key": "lon", "value": "-73.7781" }
+              ]
+            },
+            "description": "Returns current weather at the given coordinates via Open-Meteo. **Free API, no key required, no quota.**\n\nResponse shape:\n```json\n{\n  \"location\": \"40.64, -73.78\",\n  \"tempC\": 9,\n  \"tempF\": 48,\n  \"condition\": \"Overcast\",\n  \"icon\": \"overcast\",\n  \"windKph\": 12.1,\n  \"windDirection\": \"SE\",\n  \"visibilityKm\": 12.2,\n  \"precipitationMm\": 0,\n  \"updatedAt\": \"2026-04-30T...\"\n}\n```\n\nThese are JFK's coordinates."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/weather  (LHR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Returns valid weather data for LHR', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('tempC');",
+                  "  pm.expect(body.tempC).to.be.a('number');",
+                  "  pm.expect(body).to.have.property('condition');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/weather?lat=51.4700&lon=-0.4543",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "weather"],
+              "query": [
+                { "key": "lat", "value": "51.4700" },
+                { "key": "lon", "value": "-0.4543" }
+              ]
+            },
+            "description": "Weather at London Heathrow. Useful as a second test to verify weather differs by location (it should — JFK and LHR will rarely have identical conditions)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/weather  (missing params)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 (validation error)', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/weather",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "weather"]
+            },
+            "description": "Tests input validation. Without `lat` and `lon`, the server should reject the request with HTTP 400."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Share",
+      "item": [
+        {
+          "name": "POST /api/share  (create link)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 404', () => {",
+                  "  // 200 if the demo flight is airborne; 404 if it isn't.",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Body has shareId and url', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('shareId');",
+                  "    pm.expect(body).to.have.property('url');",
+                  "  });",
+                  "",
+                  "  // Save the shareId so the next request in this folder can use it.",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('shareId', body.shareId);",
+                  "  console.log('Saved shareId for next request:', body.shareId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightNumber\": \"{{demoFlight}}\",\n  \"sharedBy\": \"PostmanTester\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/share",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "share"]
+            },
+            "description": "Creates a shareable link for a flight. The `sharedBy` username is optional; when provided, the public share page shows 'PostmanTester will arrive in [city] at [time].'\n\n**The shareId returned by this request is automatically saved into a collection variable**, so the next request (Retrieve shared flight) will use it."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/share/:shareId  (retrieve)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Make sure we have a shareId. If the previous request didn't run,",
+                  "// the variable will be empty and this request will fail clearly.",
+                  "const shareId = pm.collectionVariables.get('shareId');",
+                  "if (!shareId) {",
+                  "  console.warn('No shareId saved. Run the POST /api/share request first.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Returns flight + sharedBy', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('flight');",
+                  "    pm.expect(body).to.have.property('sharedBy');",
+                  "  });",
+                  "",
+                  "  pm.test('sharedBy matches what we sent', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.sharedBy).to.eql('PostmanTester');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/share/{{shareId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "share", "{{shareId}}"]
+            },
+            "description": "Retrieves the flight associated with a share link. Public — no auth required. Uses the `shareId` saved by the previous request.\n\nResponse shape:\n```json\n{\n  \"flight\": { /* full Flight object with departure + arrival times */ },\n  \"sharedBy\": \"PostmanTester\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/share/INVALID  (404 test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Body contains an error message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/share/this_id_does_not_exist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "share", "this_id_does_not_exist"]
+            },
+            "description": "Tests the 404 path — looking up a share ID that was never created should return 404 with an error message."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

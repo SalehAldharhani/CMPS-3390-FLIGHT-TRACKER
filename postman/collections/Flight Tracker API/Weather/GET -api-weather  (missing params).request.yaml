@@ -1,0 +1,13 @@
+$kind: http-request
+name: GET /api/weather  (missing params)
+description: Tests input validation. Without `lat` and `lon`, the server should reject the request with HTTP 400.
+url: "{{baseUrl}}/api/weather"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 400 (validation error)', () => {
+        pm.response.to.have.status(400);
+      });
+    language: text/javascript
+order: 3000

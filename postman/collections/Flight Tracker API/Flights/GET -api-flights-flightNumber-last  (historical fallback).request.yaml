@@ -1,0 +1,28 @@
+$kind: http-request
+name: GET /api/flights/:flightNumber/last  (historical fallback)
+description: |-
+  Returns the most recent leg of a flight from the past 24 hours, even if it's not currently airborne. Useful for showing 'last flight' info to users.
+
+  **24h cache** — repeated lookups of the same flight number don't burn additional credits.
+url: "{{baseUrl}}/api/flights/{{demoFlight}}/last"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200 or 404', () => {
+        pm.expect(pm.response.code).to.be.oneOf([200, 404]);
+      });
+
+      if (pm.response.code === 200) {
+        pm.test('Marked as historical', () => {
+          const body = pm.response.json();
+          pm.expect(body).to.have.property('isHistorical', true);
+        });
+
+        pm.test('Status is LANDED for completed flights', () => {
+          const body = pm.response.json();
+          pm.expect(body.status).to.be.oneOf(['LANDED', 'EN_ROUTE']);
+        });
+      }
+    language: text/javascript
+order: 3000

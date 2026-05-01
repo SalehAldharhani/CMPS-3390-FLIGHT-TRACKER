@@ -1,0 +1,18 @@
+$kind: http-request
+name: GET /api/flights/INVALID  (validation test)
+description: Tests server-side input validation. The flight number `!@#$%` is invalid (contains symbols). The server's `validateFlightNumber` should reject this with HTTP 400.
+url: "{{baseUrl}}/api/flights/!@#$%"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 400 (bad request)', () => {
+        pm.response.to.have.status(400);
+      });
+
+      pm.test('Body contains an error message', () => {
+        const body = pm.response.json();
+        pm.expect(body).to.have.property('error');
+      });
+    language: text/javascript
+order: 5000

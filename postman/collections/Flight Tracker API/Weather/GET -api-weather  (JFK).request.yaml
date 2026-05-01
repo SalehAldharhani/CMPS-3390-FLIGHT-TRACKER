@@ -1,0 +1,52 @@
+$kind: http-request
+name: GET /api/weather  (JFK)
+description: |-
+  Returns current weather at the given coordinates via Open-Meteo. **Free API, no key required, no quota.**
+
+  Response shape:
+  ```json
+  {
+    "location": "40.64, -73.78",
+    "tempC": 9,
+    "tempF": 48,
+    "condition": "Overcast",
+    "icon": "overcast",
+    "windKph": 12.1,
+    "windDirection": "SE",
+    "visibilityKm": 12.2,
+    "precipitationMm": 0,
+    "updatedAt": "2026-04-30T..."
+  }
+  ```
+
+  These are JFK's coordinates.
+url: "{{baseUrl}}/api/weather?lat=40.6413&lon=-73.7781"
+method: GET
+queryParams:
+  lat: "40.6413"
+  lon: "-73.7781"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', () => pm.response.to.have.status(200));
+
+      pm.test('Body has temperature data', () => {
+        const body = pm.response.json();
+        pm.expect(body).to.have.property('tempC');
+        pm.expect(body).to.have.property('tempF');
+        pm.expect(body.tempC).to.be.a('number');
+        pm.expect(body.tempF).to.be.a('number');
+      });
+
+      pm.test('Body has wind information', () => {
+        const body = pm.response.json();
+        pm.expect(body).to.have.property('windKph');
+        pm.expect(body).to.have.property('windDirection');
+      });
+
+      pm.test('Condition is a non-empty string', () => {
+        const body = pm.response.json();
+        pm.expect(body.condition).to.be.a('string').and.not.empty;
+      });
+    language: text/javascript
+order: 1000

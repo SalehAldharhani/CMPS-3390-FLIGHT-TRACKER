@@ -1,0 +1,33 @@
+$kind: collection
+description: |-
+  ## CMPS-3390 Project 3 — Flight Tracker API
+
+  Complete test collection for the Flight Tracker backend (Express + Node).
+
+  ### Setup
+
+  1. Make sure the server is running locally: `npm run server` (defaults to port 3001).
+  2. Verify the `baseUrl` collection variable below — change it if you're running on a different port.
+  3. You must have a valid `FLIGHTRADAR24_API_KEY` in your `.env` for the flight endpoints to return real data.
+
+  ### How to run
+
+  - **Single request:** click any endpoint in the sidebar and hit **Send**.
+  - **Whole collection:** click **Run collection** in the top-right of this collection. Each request has a Tests script that checks the response status and structure.
+
+  ### Folders
+
+  - **Health** — server heartbeat
+  - **Flights** — live, detailed, historical, and search endpoints
+  - **Weather** — Open-Meteo proxy
+  - **Share** — public share link create + retrieve
+
+  ### Notes
+
+  - Live flight endpoints only return data for flights that are **currently airborne**. If a request returns 404, that's not a bug — pick a different flight from flightradar24.com.
+  - The `/last` endpoint returns the most recent historical leg, which works even when the flight isn't airborne. Its 24h cache means repeat lookups don't burn FR24 credits.
+  - The shareId in the Share folder is captured automatically from the create request, so you can run the folder end-to-end.
+variables:
+  baseUrl: http://localhost:3001
+  demoFlight: AA100
+  shareId: ""

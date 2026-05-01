@@ -1,0 +1,18 @@
+$kind: http-request
+name: GET /api/share/INVALID  (404 test)
+description: Tests the 404 path — looking up a share ID that was never created should return 404 with an error message.
+url: "{{baseUrl}}/api/share/this_id_does_not_exist"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 404', () => {
+        pm.response.to.have.status(404);
+      });
+
+      pm.test('Body contains an error message', () => {
+        const body = pm.response.json();
+        pm.expect(body).to.have.property('error');
+      });
+    language: text/javascript
+order: 3000

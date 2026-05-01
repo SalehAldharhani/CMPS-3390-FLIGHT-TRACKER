@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: 5c1fba6d-33b7-468b-840e-1647711540d7
+
+localResources:
+  collections:
+    - ..\docs\api-collection.json
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ..\postman\collections\Flight Tracker API: ad6d93e0-b3ee-40e1-98ad-44c37a1091f7
