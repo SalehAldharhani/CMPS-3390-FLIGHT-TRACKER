@@ -3,10 +3,6 @@ import { useAuth } from './AuthContext.jsx';
 
 /**
  * App header / nav bar.
- * Shows the current username + sign-out when signed in, or sign-in/up links
- * when not. The brand mark always links to the appropriate landing page.
- *
- * OWNER: Jon (structure) + JASD3EP (visual treatment via .ft-header* classes)
  */
 export default function Header() {
   const { isSignedIn, currentUser, signOut } = useAuth();

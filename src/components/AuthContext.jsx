@@ -4,19 +4,6 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
  * AuthContext
  * --------------------------------------------------------------------------
  * Local-only "accounts" stored in localStorage.
- *
- * IMPORTANT: This is NOT real authentication. Passwords are stored as-is in
- * the browser's localStorage, which is readable by anyone with access to
- * the device. Do NOT use this for anything that needs real security.
- *
- * It exists to give the app a multi-user feel — each user has their own
- * tracked flights, sign in/sign out flow, and personalized header. For a
- * class project this is plenty; real auth would need server-side hashed
- * passwords + sessions/JWTs (see PROJECT_GUIDE.md "out of scope").
- *
- * What's stored in localStorage:
- *   ft.users.v1        -> { username: { password } } - the "user database"
- *   ft.currentUser.v1  -> "username" of currently signed-in user, or null
  */
 
 const USERS_KEY   = 'ft.users.v1';

@@ -10,9 +10,9 @@ A progressive web app (PWA) that tracks live flights with weather context for bo
 
 | Person | Role | Primary files |
 |---|---|---|
-| **Jon** | Front End | `src/components/`, `src/apiClient.js`, `src/App.jsx`, `src/main.jsx` |
-| **Clonexstax** | Back End | `server/`, especially `server/services/*` (real API integrations) |
-| **JASD3EP** | Design | `src/styles/app.css` (everything visual lives here) |
+| **Jonathan Torres** | Front End | `src/components/`, `src/apiClient.js`, `src/App.jsx`, `src/main.jsx` |
+| **Saleh Al-Dharhani** | Back End | `server/`, especially `server/services/*` (real API integrations) |
+| **Jasdeep Singh** | Design | `src/styles/app.css` (everything visual lives here) |
 
 Each file has an `OWNER:` comment at the top. Stick to your files unless you coordinate first — that's how three people work in parallel without merge hell.
 
