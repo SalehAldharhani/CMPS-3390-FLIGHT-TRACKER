@@ -1,59 +1,125 @@
-import { useEffect, useRef } from 'react';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import { useEffect, useRef } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+function getSunPosition() {
+  const now = new Date();
+  const dayOfYear = Math.floor(
+    (now - new Date(now.getFullYear(), 0, 0)) / 86400000,
+  );
+  const declination =
+    -23.45 * Math.cos(((2 * Math.PI) / 365) * (dayOfYear + 10));
+  const utcHours =
+    now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+  return { lat: declination, lon: (12 - utcHours) * 15 };
+}
+
+function getNightPolygon() {
+  const { lat: sunLat, lon: sunLon } = getSunPosition();
+  const toRad = (d) => (d * Math.PI) / 180;
+  const toDeg = (r) => (r * 180) / Math.PI;
+  const clampedLat =
+    Math.abs(sunLat) < 0.1 ? (sunLat >= 0 ? 0.1 : -0.1) : sunLat;
+  const sunLatRad = toRad(clampedLat);
+  const sunLonRad = toRad(sunLon);
+
+  const pts = [];
+  for (let lon = -180; lon <= 180; lon++) {
+    pts.push([
+      lon,
+      toDeg(Math.atan(-Math.cos(toRad(lon) - sunLonRad) / Math.tan(sunLatRad))),
+    ]);
+  }
+
+  const pole = clampedLat > 0 ? -90 : 90;
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [[...pts, [180, pole], [-180, pole], pts[0]]],
+    },
+    properties: {},
+  };
+}
 
 const MAP_STYLE = {
   version: 8,
-  projection: { type: 'globe' },
-  glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
+  projection: { type: "globe" },
+  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
   sources: {
-    'carto-dark': {
-      type: 'raster',
+    "esri-satellite": {
+      type: "raster",
       tiles: [
-        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       ],
       tileSize: 256,
       attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+        "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
     },
     route: {
-      type: 'geojson',
-      data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: [] },
+      },
+    },
+    "night-shadow": {
+      type: "geojson",
+      data: getNightPolygon(),
     },
   },
   layers: [
-    { id: 'background', type: 'background', paint: { 'background-color': '#0b1020' } },
-    { id: 'tiles',      type: 'raster',     source: 'carto-dark' },
     {
-      id: 'route-line',
-      type: 'line',
-      source: 'route',
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      id: "background",
+      type: "background",
+      paint: { "background-color": "#050a14" },
+    },
+    { id: "satellite", type: "raster", source: "esri-satellite" },
+    {
+      id: "night-fill",
+      type: "fill",
+      source: "night-shadow",
+      paint: { "fill-color": "#04111f", "fill-opacity": 0.72 },
+    },
+    {
+      id: "route-glow",
+      type: "line",
+      source: "route",
+      layout: { "line-cap": "round", "line-join": "round" },
       paint: {
-        'line-color': '#ffb347',
-        'line-width': 2.5,
-        'line-opacity': 0.9,
-        'line-dasharray': [2, 1.5],
+        "line-color": "#ff6b6b",
+        "line-width": 10,
+        "line-opacity": 0.25,
+      },
+    },
+    {
+      id: "route-line",
+      type: "line",
+      source: "route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": "#ff3b3b",
+        "line-width": 2.5,
+        "line-opacity": 1,
+        "line-dasharray": [2, 1.5],
       },
     },
   ],
   sky: {
-    'sky-color': '#0b1020',
-    'sky-horizon-blend': 0.5,
-    'horizon-color': '#1f2a4a',
-    'horizon-fog-blend': 0.6,
-    'fog-color': '#0b1020',
-    'fog-ground-blend': 0.0,
+    "sky-color": "#020a1a",
+    "sky-horizon-blend": 0.4,
+    "horizon-color": "#0d3d72",
+    "horizon-fog-blend": 0.7,
+    "fog-color": "#1a5fa0",
+    "fog-ground-blend": 0.0,
   },
 };
 
 export default function FlightMap({ flight }) {
   const containerRef = useRef(null);
-  const mapRef       = useRef(null);
-  const markersRef   = useRef({ origin: null, dest: null, plane: null });
+  const mapRef = useRef(null);
+  const markersRef = useRef({ origin: null, dest: null, plane: null });
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -66,17 +132,29 @@ export default function FlightMap({ flight }) {
       attributionControl: { compact: true },
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      "top-right",
+    );
 
-    map.on('load', () => {
-      try { map.setProjection({ type: 'globe' }); } catch { /* ignore */ }
+    map.on("load", () => {
+      try {
+        map.setProjection({ type: "globe" });
+      } catch {
+        /* ignore */
+      }
       renderFlight();
     });
+
+    const nightTimer = setInterval(() => {
+      map.getSource("night-shadow")?.setData(getNightPolygon());
+    }, 60_000);
 
     mapRef.current = map;
 
     return () => {
-      Object.values(markersRef.current).forEach(m => m?.remove());
+      clearInterval(nightTimer);
+      Object.values(markersRef.current).forEach((m) => m?.remove());
       map.remove();
       mapRef.current = null;
     };
@@ -93,7 +171,7 @@ export default function FlightMap({ flight }) {
     if (!map || !flight?.origin || !flight?.destination) return;
 
     if (!map.isStyleLoaded()) {
-      map.once('load', renderFlight);
+      map.once("load", renderFlight);
       return;
     }
 
@@ -104,26 +182,30 @@ export default function FlightMap({ flight }) {
 
     markersRef.current.origin?.remove();
     markersRef.current.origin = new maplibregl.Marker({
-      element: makeDotElement('#60a5fa', o.iata),
-      anchor: 'center',
+      element: makeDotElement("#38bdf8", o.iata),
+      anchor: "center",
     })
       .setLngLat([o.lon, o.lat])
-      .setPopup(new maplibregl.Popup({ offset: 16 }).setText(`${o.iata} — ${o.city}`))
+      .setPopup(
+        new maplibregl.Popup({ offset: 16 }).setText(`${o.iata} — ${o.city}`),
+      )
       .addTo(map);
 
     markersRef.current.dest?.remove();
     markersRef.current.dest = new maplibregl.Marker({
-      element: makeDotElement('#4ade80', d.iata),
-      anchor: 'center',
+      element: makeDotElement("#4ade80", d.iata),
+      anchor: "center",
     })
       .setLngLat([d.lon, d.lat])
-      .setPopup(new maplibregl.Popup({ offset: 16 }).setText(`${d.iata} — ${d.city}`))
+      .setPopup(
+        new maplibregl.Popup({ offset: 16 }).setText(`${d.iata} — ${d.city}`),
+      )
       .addTo(map);
 
-    map.getSource('route')?.setData({
-      type: 'Feature',
+    map.getSource("route")?.setData({
+      type: "Feature",
       properties: {},
-      geometry: { type: 'LineString', coordinates: routeCoords },
+      geometry: { type: "LineString", coordinates: routeCoords },
     });
 
     markersRef.current.plane?.remove();
@@ -132,23 +214,26 @@ export default function FlightMap({ flight }) {
     if (flight.position) {
       const snap = closestPointOnPath(
         [flight.position.lon, flight.position.lat],
-        routeCoords
+        routeCoords,
       );
       snappedPlane = snap.point;
 
       const nextIdx = Math.min(snap.index + 1, routeCoords.length - 1);
-      const routeHeading = (snap.index < routeCoords.length - 1)
-        ? bearing(snappedPlane, routeCoords[nextIdx])
-        : (flight.position.heading ?? 0);
+      const routeHeading =
+        snap.index < routeCoords.length - 1
+          ? bearing(snappedPlane, routeCoords[nextIdx])
+          : (flight.position.heading ?? 0);
 
       markersRef.current.plane = new maplibregl.Marker({
         element: makePlaneElement(routeHeading),
-        anchor: 'center',
+        anchor: "center",
       })
         .setLngLat(snappedPlane)
-        .setPopup(new maplibregl.Popup({ offset: 18 }).setText(
-          `${flight.flightNumber} • ${flight.position.altitude ?? '?'} ft • ${flight.position.groundSpeed ?? '?'} kts`
-        ))
+        .setPopup(
+          new maplibregl.Popup({ offset: 18 }).setText(
+            `${flight.flightNumber} • ${flight.position.altitude ?? "?"} ft • ${flight.position.groundSpeed ?? "?"} kts`,
+          ),
+        )
         .addTo(map);
     }
 
@@ -170,8 +255,8 @@ export default function FlightMap({ flight }) {
 }
 
 function makeDotElement(color, label) {
-  const el = document.createElement('div');
-  el.className = 'ft-map-marker';
+  const el = document.createElement("div");
+  el.className = "ft-map-marker";
   el.innerHTML = `
     <span class="ft-map-marker__dot" style="background:${color};color:${color}"></span>
     <span class="ft-map-marker__label">${label}</span>
@@ -180,8 +265,8 @@ function makeDotElement(color, label) {
 }
 
 function makePlaneElement(headingDeg) {
-  const el = document.createElement('div');
-  el.className = 'ft-map-plane';
+  const el = document.createElement("div");
+  el.className = "ft-map-plane";
   el.innerHTML = `
     <svg viewBox="0 0 24 24" width="36" height="36"
          style="display:block;transform:rotate(${headingDeg}deg);transition:transform 300ms ease-out;"
@@ -197,16 +282,30 @@ function greatCircle([lon1, lat1], [lon2, lat2], segments = 64) {
   const toRad = (deg) => (deg * Math.PI) / 180;
   const toDeg = (rad) => (rad * 180) / Math.PI;
 
-  const φ1 = toRad(lat1), λ1 = toRad(lon1);
-  const φ2 = toRad(lat2), λ2 = toRad(lon2);
+  const φ1 = toRad(lat1),
+    λ1 = toRad(lon1);
+  const φ2 = toRad(lat2),
+    λ2 = toRad(lon2);
 
-  const a = [Math.cos(φ1) * Math.cos(λ1), Math.cos(φ1) * Math.sin(λ1), Math.sin(φ1)];
-  const b = [Math.cos(φ2) * Math.cos(λ2), Math.cos(φ2) * Math.sin(λ2), Math.sin(φ2)];
+  const a = [
+    Math.cos(φ1) * Math.cos(λ1),
+    Math.cos(φ1) * Math.sin(λ1),
+    Math.sin(φ1),
+  ];
+  const b = [
+    Math.cos(φ2) * Math.cos(λ2),
+    Math.cos(φ2) * Math.sin(λ2),
+    Math.sin(φ2),
+  ];
 
-  const dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+  const dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   const θ = Math.acos(Math.max(-1, Math.min(1, dot)));
 
-  if (θ < 1e-9) return [[lon1, lat1], [lon2, lat2]];
+  if (θ < 1e-9)
+    return [
+      [lon1, lat1],
+      [lon2, lat2],
+    ];
 
   const sinθ = Math.sin(θ);
   const points = [];
@@ -215,17 +314,17 @@ function greatCircle([lon1, lat1], [lon2, lat2], segments = 64) {
   for (let i = 0; i <= segments; i++) {
     const t = i / segments;
     const A = Math.sin((1 - t) * θ) / sinθ;
-    const B = Math.sin(t * θ)       / sinθ;
+    const B = Math.sin(t * θ) / sinθ;
 
     const x = A * a[0] + B * b[0];
     const y = A * a[1] + B * b[1];
     const z = A * a[2] + B * b[2];
 
-    const lat = toDeg(Math.atan2(z, Math.sqrt(x*x + y*y)));
-    let lon   = toDeg(Math.atan2(y, x));
+    const lat = toDeg(Math.atan2(z, Math.sqrt(x * x + y * y)));
+    let lon = toDeg(Math.atan2(y, x));
 
     if (prevLon !== null) {
-      while (lon - prevLon >  180) lon -= 360;
+      while (lon - prevLon > 180) lon -= 360;
       while (lon - prevLon < -180) lon += 360;
     }
     prevLon = lon;
@@ -243,7 +342,10 @@ function closestPointOnPath([lon, lat], path) {
     const dLon = p[0] - lon;
     const dLat = p[1] - lat;
     const d = dLon * dLon + dLat * dLat;
-    if (d < bestDist) { bestDist = d; bestIdx = i; }
+    if (d < bestDist) {
+      bestDist = d;
+      bestIdx = i;
+    }
   }
   return { point: path[bestIdx], index: bestIdx };
 }
@@ -251,10 +353,11 @@ function closestPointOnPath([lon, lat], path) {
 function bearing([lon1, lat1], [lon2, lat2]) {
   const toRad = (deg) => (deg * Math.PI) / 180;
   const toDeg = (rad) => (rad * 180) / Math.PI;
-  const φ1 = toRad(lat1), φ2 = toRad(lat2);
+  const φ1 = toRad(lat1),
+    φ2 = toRad(lat2);
   const Δλ = toRad(lon2 - lon1);
   const y = Math.sin(Δλ) * Math.cos(φ2);
-  const x = Math.cos(φ1) * Math.sin(φ2) -
-            Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  const x =
+    Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
