@@ -9,30 +9,17 @@ import LoginPage from './components/LoginPage.jsx';
 import SignupPage from './components/SignupPage.jsx';
 import RequireAuth from './components/RequireAuth.jsx';
 
-/**
- * Top-level route map.
- *
- * /                       -> Search + tracked flights list  (auth required)
- * /flight/:flightNumber   -> Detail (map, weather, status)  (auth required)
- * /share/:shareId         -> Public read-only view          (NO auth - that's the point)
- * /login                  -> Sign in
- * /signup                 -> Create account
- * *                       -> 404
- */
 export default function App() {
   return (
     <div className="app-shell">
       <Header />
       <main className="app-main">
         <Routes>
-          {/* Auth routes - public so unsigned-in users can reach them */}
           <Route path="/login"  element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
 
-          {/* Public share link - no auth needed */}
           <Route path="/share/:shareId" element={<SharedFlightPage />} />
 
-          {/* Protected routes */}
           <Route path="/" element={
             <RequireAuth><HomePage /></RequireAuth>
           } />

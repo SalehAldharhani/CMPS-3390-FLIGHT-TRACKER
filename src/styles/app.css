@@ -1,31 +1,4 @@
-/* =============================================================================
-   APP.CSS — All styles for Flight Tracker, in one file
-   =============================================================================
-   OWNER: JASD3EP (Design)
-
-   This is the only CSS file you need to edit. Everything is organized into
-   clearly-marked sections — use Ctrl+F to jump to a section.
-
-   SECTIONS:
-     1. Design tokens (variables)
-     2. Global resets and base elements
-     3. Layout (app shell, header, footer)
-     4. Pages (home, flight detail)
-     5. Components (search, cards, map, weather, share button)
-     6. Utilities
-     7. Auth (sign in, sign up, header user chip)
-     8. Shared flight page (public read-only view)
-     9. Historical / idle flight states
-
-   Tip: Change a value in section 1 and it cascades to the whole app.
-   ============================================================================= */
-
-/* =============================================================================
-   1. DESIGN TOKENS
-   ============================================================================= */
-
 :root {
-  /* --- Colors ------------------------------------------------------------- */
   --color-bg: #ffffff;
   --color-bg-elevated: #f5f5f5;
   --color-bg-sunken: #ebebeb;
@@ -45,11 +18,6 @@
   --color-status-cancel: #dc2626;
   --color-status-board: #2563eb;
 
-  /* --- Typography ---------------------------------------------------------
-     TODO: DESIGN — load real fonts via @import or <link> in index.html
-       - Display: "Space Grotesk", "Geist", "Manrope", "Fraunces"
-       - Mono (for flight numbers): "JetBrains Mono", "IBM Plex Mono"
-  ----------------------------------------------------------------------- */
   --font-display:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -67,7 +35,6 @@
   --fw-medium: 500;
   --fw-bold: 700;
 
-  /* --- Spacing scale ----------------------------------------------------- */
   --sp-1: 0.25rem;
   --sp-2: 0.5rem;
   --sp-3: 0.75rem;
@@ -77,7 +44,6 @@
   --sp-8: 3rem;
   --sp-10: 4rem;
 
-  /* --- Radii / shadows / motion ------------------------------------------ */
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 20px;
@@ -93,14 +59,9 @@
   --dur-med: 300ms;
   --dur-slow: 600ms;
 
-  /* --- Layout ------------------------------------------------------------ */
   --max-content-width: 1200px;
   --header-height: 64px;
 }
-
-/* =============================================================================
-   2. GLOBAL RESETS & BASE ELEMENTS
-   ============================================================================= */
 
 *,
 *::before,
@@ -184,10 +145,6 @@ code,
   font-size: 0.95em;
 }
 
-/* =============================================================================
-   3. LAYOUT — App Shell, Header, Footer
-   ============================================================================= */
-
 .app-shell {
   min-height: 100%;
   display: flex;
@@ -202,7 +159,6 @@ code,
   padding: var(--sp-6) var(--sp-5);
 }
 
-/* ----- Header ----- */
 .ft-header {
   position: sticky;
   top: 0;
@@ -261,7 +217,6 @@ code,
   background: var(--color-bg-elevated);
 }
 
-/* ----- Footer ----- */
 .ft-footer {
   border-top: 1px solid var(--color-border-soft);
   padding: var(--sp-5) var(--sp-5);
@@ -281,18 +236,12 @@ code,
   font-size: var(--fs-xs);
 }
 
-/* =============================================================================
-   4. PAGES — Home, Flight Detail
-   ============================================================================= */
-
-/* ----- Home page ----- */
 .ft-home {
   display: flex;
   flex-direction: column;
   gap: 0;
 }
 
-/* Full-width dark hero — breaks out of .app-main's centered container */
 .ft-home__hero {
   width: 100vw;
   margin-left: calc(50% - 50vw);
@@ -322,7 +271,6 @@ code,
   max-width: 560px;
 }
 
-/* Search bar on dark hero — white pill */
 .ft-home__hero .ft-search {
   max-width: 600px;
   width: 100%;
@@ -370,7 +318,6 @@ code,
   text-align: center;
 }
 
-/* ----- Flight detail page ----- */
 .ft-detail {
   display: flex;
   flex-direction: column;
@@ -506,11 +453,6 @@ code,
   font-family: var(--font-mono);
 }
 
-/* =============================================================================
-   5. COMPONENTS — Search, Cards, Map, Weather, Share
-   ============================================================================= */
-
-/* ----- Flight search ----- */
 .ft-search {
   width: 100%;
   max-width: 560px;
@@ -571,7 +513,6 @@ code,
   padding-left: var(--sp-4);
 }
 
-/* ----- Flight card ----- */
 .ft-card {
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
@@ -654,7 +595,7 @@ code,
 .ft-card__link {
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
-  margin-right: auto;  /* push the buttons to the right */
+  margin-right: auto;
 }
 .ft-card__refresh {
   font-size: var(--fs-base);
@@ -717,7 +658,6 @@ code,
   border-color: var(--color-status-cancel);
 }
 
-/* ----- Flight map ----- */
 .ft-map {
   background: var(--color-bg-sunken);
   border: 1px solid var(--color-border-soft);
@@ -732,7 +672,6 @@ code,
   position: relative;
 }
 
-/* Origin/destination markers */
 .ft-map-marker {
   display: flex;
   align-items: center;
@@ -744,7 +683,7 @@ code,
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid #0b1020; /* matches --color-bg for ring effect */
+  border: 2px solid #0b1020;
   box-shadow: 0 0 0 2px currentColor;
 }
 .ft-map-marker__label {
@@ -758,7 +697,6 @@ code,
   letter-spacing: 0.05em;
 }
 
-/* Live aircraft marker */
 .ft-map-plane {
   font-size: 1.5rem;
   color: #ffffff;
@@ -769,7 +707,6 @@ code,
   line-height: 1;
 }
 
-/* MapLibre's default popups - tweak to match the dark theme */
 .maplibregl-popup-content {
   background: var(--color-bg-elevated) !important;
   color: var(--color-text) !important;
@@ -790,7 +727,6 @@ code,
   color: var(--color-text-muted) !important;
 }
 
-/* ----- Weather panel ----- */
 .ft-weather {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -859,7 +795,6 @@ code,
   font-family: var(--font-mono);
 }
 
-/* ----- Share link button ----- */
 .ft-share {
   background: transparent;
   color: var(--color-text);
@@ -887,11 +822,6 @@ code,
   border-color: var(--color-status-cancel);
 }
 
-/* =============================================================================
-   6. UTILITIES
-   ============================================================================= */
-
-/* Visually hidden but readable to screen readers */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -904,13 +834,6 @@ code,
   border: 0;
 }
 
-/* =============================================================================
-   7. AUTH — Sign in, Sign up, header user chip
-   =============================================================================
-   Added when local accounts were introduced. All values use existing tokens.
-   ============================================================================= */
-
-/* ----- Header user chip + sign out ----- */
 .ft-header__user {
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
@@ -935,7 +858,6 @@ code,
   filter: brightness(1.05);
 }
 
-/* ----- Auth pages (Login + Signup) ----- */
 .ft-auth {
   min-height: calc(100vh - var(--header-height) * 2);
   display: flex;
@@ -1045,10 +967,6 @@ code,
 }
 
 
-/* =============================================================================
-   8. SHARED FLIGHT PAGE — public read-only view
-   ============================================================================= */
-
 .ft-shared {
   display: flex;
   flex-direction: column;
@@ -1072,7 +990,6 @@ code,
   color: var(--color-status-cancel);
 }
 
-/* Hero block at the top of the shared page */
 .ft-shared__hero {
   display: flex;
   flex-direction: column;
@@ -1108,7 +1025,6 @@ code,
 .ft-shared__status--cancel { color: var(--color-status-cancel); }
 .ft-shared__status--board  { color: var(--color-text-muted); }
 
-/* Times row — Departed → Arriving */
 .ft-shared__times {
   display: flex;
   align-items: stretch;
@@ -1152,7 +1068,6 @@ code,
   color: var(--color-text-faint);
 }
 
-/* CTA row at bottom */
 .ft-shared__cta-row {
   text-align: center;
   margin: 0;
@@ -1174,16 +1089,6 @@ code,
 }
 
 
-/* =============================================================================
-   9. HISTORICAL / IDLE FLIGHT STATES
-   =============================================================================
-   Covers the "Last flight" badge, the confirmation prompt shown when a
-   searched flight isn't currently airborne, and the "Not in the air" idle
-   state on the home-page card. All values use existing design tokens so
-   they pick up JASD3EP's palette automatically.
-   ============================================================================= */
-
-/* "Last flight" badge in the detail page header */
 .ft-detail__historical-badge {
   display: inline-block;
   margin-left: var(--sp-2);
@@ -1199,7 +1104,6 @@ code,
   vertical-align: middle;
 }
 
-/* Confirmation prompt on the detail page */
 .ft-detail__msg--prompt {
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
@@ -1234,7 +1138,6 @@ code,
   color: var(--color-text-muted);
 }
 
-/* Idle (not-airborne) variant of the home card */
 .ft-card--idle {
   background: var(--color-bg-elevated);
   border: 1px dashed var(--color-border);

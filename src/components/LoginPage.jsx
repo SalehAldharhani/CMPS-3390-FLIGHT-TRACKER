@@ -3,13 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 import { validateUsername, validatePassword } from '../validators.js';
 
-/**
- * Sign in page.
- * --------------------------------------------------------------------------
- * Validates input client-side using the shared validators, then calls
- * AuthContext.signIn. On success, returns to wherever the user was
- * trying to go (or to home if they came directly).
- */
 export default function LoginPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -18,7 +11,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
 
-  // If they got bounced here from a protected page, go back there after login.
   const redirectTo = location.state?.from?.pathname ?? '/';
 
   function onSubmit(e) {

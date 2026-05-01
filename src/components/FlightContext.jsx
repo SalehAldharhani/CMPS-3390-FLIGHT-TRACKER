@@ -1,24 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext.jsx';
 
-/**
- * FlightContext
- * --------------------------------------------------------------------------
- * Holds the list of flights the user is tracking. Persists to localStorage
- * so refreshes / re-opens of the PWA keep the list intact.
- *
- * Implements spec requirements:
- *   - "Persistent Data Storage (either locally or behind an API)"
- *   - State management without prop-drilling
- *
- * USER-AWARE: each signed-in user gets their own tracked flight list,
- * scoped by their username. When no one is signed in, the list is empty
- * and tracking is a no-op (the UI gates this anyway).
- *
- * Storage shape:
- *   ft.trackedFlights.v2.<username>  -> string[] of flight numbers
- */
-
 const FlightContext = createContext(null);
 
 function storageKey(username) {
@@ -49,12 +31,10 @@ export function FlightProvider({ children }) {
     loadFromStorage(currentUser)
   );
 
-  // When the signed-in user changes, swap to that user's list.
   useEffect(() => {
     setTrackedFlightNumbers(loadFromStorage(currentUser));
   }, [currentUser]);
 
-  // Persist whenever the list changes (under the current user's key).
   useEffect(() => {
     saveToStorage(currentUser, trackedFlightNumbers);
   }, [currentUser, trackedFlightNumbers]);

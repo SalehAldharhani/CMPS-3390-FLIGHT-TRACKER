@@ -2,20 +2,9 @@ import { useState } from 'react';
 import { createShareLink } from '../apiClient.js';
 import { useAuth } from './AuthContext.jsx';
 
-/**
- * ShareLinkButton
- * --------------------------------------------------------------------------
- * Implements the "Shared Live Link" idea from the brief:
- *   "Give each tracked flight a shareable page or deep link so family /
- *    friends can open the same flight quickly."
- *
- * Hits POST /api/share with the flight number AND the current username
- * (so the shared page can say "Jon will arrive at..."), gets back a
- * shareId, and copies the resulting URL to the clipboard.
- */
 export default function ShareLinkButton({ flightNumber }) {
   const { currentUser } = useAuth();
-  const [state, setState] = useState('idle'); // idle | loading | copied | error
+  const [state, setState] = useState('idle');
   const [error, setError] = useState(null);
 
   async function onClick() {

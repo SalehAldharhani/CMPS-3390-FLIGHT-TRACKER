@@ -3,13 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 import { validateUsername, validatePassword } from '../validators.js';
 
-/**
- * Sign up page.
- * --------------------------------------------------------------------------
- * Validates username + password + confirm-password client-side, then calls
- * AuthContext.signUp. On success, the new user is automatically signed in
- * and sent to the home page.
- */
 export default function SignupPage() {
   const { signUp } = useAuth();
   const navigate = useNavigate();

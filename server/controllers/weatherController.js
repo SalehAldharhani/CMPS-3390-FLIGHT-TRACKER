@@ -1,6 +1,5 @@
 import { fetchWeatherFromProvider } from '../services/weatherService.js';
 
-/** GET /api/weather?lat=&lon= */
 export async function getWeather(req, res, next) {
   try {
     const lat = parseFloat(req.query.lat);

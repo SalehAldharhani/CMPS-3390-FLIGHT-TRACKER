@@ -1,43 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { fetchFlight, fetchFlightDetails, fetchLastFlight } from '../apiClient.js';
 
-/**
- * useFlight — fetch a single flight by number with loading/error state.
- *
- * Demonstrates spec requirement:
- *   "State-handling with asynchronous functions (callbacks vs promises vs async/await)"
- *
- * BASIC FLOW:
- *   On mount we fetch from either /flights/:n (cheap, live only) or
- *   /flights/:n/details (live + summary, 2 credits) depending on the
- *   `detailed` option.
- *
- * FALLBACK FLOW (when offerFallback === true):
- *   If the initial fetch returns 404 (flight not currently airborne) AND
- *   the caller asked for the fallback, the hook does NOT auto-fetch the
- *   historical leg. Instead it sets `needsConfirmation = true` and waits.
- *   The component renders a confirmation prompt; when the user clicks
- *   "Yes, show last flight," they call `confirmFallback()` which fires
- *   the second request to /flights/:n/last.
- *
- *   This avoids spending the extra credit unless the user actively wants
- *   the historical view.
- *
- * @param {string} flightNumber
- * @param {object} options
- * @param {number}  [options.pollMs]         — refetch on this interval (rarely used now)
- * @param {boolean} [options.detailed]       — call /details (live + summary)
- * @param {boolean} [options.offerFallback]  — on 404, prompt for historical lookup
- * @returns {{
- *   flight: Flight|null,
- *   loading: boolean,
- *   error: Error|null,
- *   refetch: () => void,
- *   needsConfirmation: boolean,
- *   confirmFallback: () => void,
- *   declineFallback: () => void,
- * }}
- */
 export default function useFlight(flightNumber, options = {}) {
   const { pollMs, detailed = false, offerFallback = false } = options;
 
@@ -45,9 +8,8 @@ export default function useFlight(flightNumber, options = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
-  const [tick, setTick] = useState(0); // bump to force a refetch
+  const [tick, setTick] = useState(0);
 
-  // The initial / live fetch
   useEffect(() => {
     if (!flightNumber) { setLoading(false); return; }
 
@@ -65,8 +27,6 @@ export default function useFlight(flightNumber, options = {}) {
       } catch (err) {
         if (err.name === 'AbortError') return;
 
-        // 404 means "not currently airborne." If the caller wants the
-        // fallback, switch to confirmation state instead of erroring.
         if (offerFallback && err.status === 404) {
           setFlight(null);
           setNeedsConfirmation(true);
@@ -90,7 +50,6 @@ export default function useFlight(flightNumber, options = {}) {
     };
   }, [flightNumber, pollMs, detailed, offerFallback, tick]);
 
-  // User confirmed — fetch the historical leg
   const confirmFallback = useCallback(async () => {
     try {
       setLoading(true);

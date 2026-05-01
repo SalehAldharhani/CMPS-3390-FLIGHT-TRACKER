@@ -1,27 +1,9 @@
-/**
- * validators.js
- * --------------------------------------------------------------------------
- * Pure validation/sanitisation functions. Used on the client BEFORE making
- * a request, and re-used on the server to enforce the same rules.
- *
- * Implements the spec requirement:
- *   "Client/Server data validation/sanitization (verifying email/password
- *    & flight num) (Sanitization Denying SQL Inserts or Injections)"
- */
-
-// IATA airline + flight number, e.g. "AA100", "BA2490", "DL55"
-// 2-letter (or 2-char alphanumeric) carrier code + 1-4 digit number.
 const FLIGHT_NUMBER_RE = /^[A-Z0-9]{2}\d{1,4}$/;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Characters that are very commonly the start of an SQL/script injection
-// attempt. We REJECT inputs containing these for any free-text field that
-// will be persisted server-side. (Real defence is parametrised queries on
-// the backend - this is belt-and-braces.)
 const DANGEROUS_RE = /['";<>\\]|--|\/\*|\*\//;
 
-/** Strip leading/trailing whitespace and uppercase a flight number. */
 export function sanitizeFlightNumber(input = '') {
   return String(input).trim().toUpperCase().replace(/\s+/g, '');
 }
@@ -44,7 +26,6 @@ export function validateEmail(input = '') {
   return { ok: true, value: cleaned };
 }
 
-// Username: 3-20 chars, alphanumeric + underscore + hyphen.
 const USERNAME_RE = /^[a-zA-Z0-9_-]{3,20}$/;
 
 export function validateUsername(input = '') {
@@ -67,7 +48,6 @@ export function validatePassword(input = '') {
   return { ok: true, value: input };
 }
 
-/** Generic free-text sanitiser: rejects common injection markers. */
 export function validateSafeText(input = '', { max = 500 } = {}) {
   const s = String(input);
   if (s.length > max)        return { ok: false, error: `Max ${max} chars.` };
