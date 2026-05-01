@@ -14,8 +14,6 @@ A progressive web app (PWA) that tracks live flights with weather context for bo
 | **Saleh Al-Dharhani** | Back End | `server/`, especially `server/services/*` (real API integrations) |
 | **Jasdeep Singh** | Design | `src/styles/app.css` (everything visual lives here) |
 
-Each file has an `OWNER:` comment at the top. Stick to your files unless you coordinate first — that's how three people work in parallel without merge hell.
-
 ---
 
 ## Quick start
@@ -37,8 +35,6 @@ npm start
 npm run dev          # client only
 npm run server:dev   # server only with --watch
 ```
-
-The skeleton ships with **mock flight + weather data** so the front end works immediately. Real API calls are clearly marked `TODO: BACKEND` in `server/services/`.
 
 ---
 
@@ -82,7 +78,7 @@ The frontend never calls 3rd-party APIs directly. It only talks to **our** Expre
 | `GET /api/share/:shareId` | `Flight` JSON | Public read-only snapshot |
 | `GET /api/health` | `{ ok, ts }` | Liveness probe |
 
-The exact JSON shape for `Flight` and `Weather` is documented at the top of `src/models/Flight.js` and `src/models/Weather.js`. **The backend must produce that shape** — that's the contract.
+The exact JSON shape for `Flight` and `Weather` is documented at the top of `src/models/Flight.js` and `src/models/Weather.js`. **The backend must produce that shape**
 
 ---
 
@@ -95,22 +91,21 @@ The exact JSON shape for `Flight` and `Weather` is documented at the top of `src
 - [x] **App Architecture Document** → `docs/architecture.md`
 - [x] **Style Guide / UI Design** → `docs/style-guide.md`
 - [x] **Research log** → `docs/research-log.md`
-- [ ] Relational DB Schema *(optional — only if we add Postgres/SQLite)*
 
 ### Required main features
 
-- [x] **Version control** → Repo on GitHub, team collaborating via PRs
+- [x] **Version control** 
 - [x] **Pure server-side controller** → `server/controllers/flightController.js`
 - [x] **At least 2 HTTP API calls from the client** → `apiClient.js` exposes `fetchFlight`, `searchFlights`, `fetchWeather`, `createShareLink`, `fetchSharedFlight`
 - [x] **Client-side data model classes** → `src/models/Flight.js`, `src/models/Weather.js`
-- [x] **Well designed Graphical UI/UX** → JASD3EP owns this; tokens in `src/styles/app.css`
+- [x] **Well designed Graphical UI/UX** →  `src/styles/app.css`
 
 ### Additional features — the 5 our team picked (need ≥ 4)
 
-- [x] **Persistent data storage** → `localStorage` for **per-user account data** (`AuthContext`) and tracked flights (`FlightContext`, scoped per user); in-memory share store on the server (stretch: upgrade to SQLite)
-- [x] **Client/Server data validation/sanitization** → `src/validators.js` re-used on both sides; flight-number format check + **username** + password validators + `validateSafeText` rejects SQL/script-injection characters; login + signup forms validate before submitting
-- [x] **3rd-party APIs/integrations** → FlightRadar24 (or OpenSky/AviationStack) + a weather provider; integration slots ready in `server/services/`
-- [x] **API testing** → Postman/Insomnia collection at `docs/api-collection.json` *(TODO — see PROJECT_GUIDE.md)*
+- [x] **Persistent data storage** → `localStorage` for **per-user account data** (`AuthContext`) and tracked flights (`FlightContext`, scoped per user);
+- [x] **Client/Server data validation/sanitization** → `src/validators.js`
+- [x] **3rd-party APIs/integrations** → FlightRadar24 + a weather provider; integration slots ready in `server/services/`
+- [x] **API testing** → Postman/Insomnia collection at `docs/api-collection.json`
 - [x] **State-handling with async functions** → `useFlight.js` uses async/await + AbortController; `WeatherPanel.jsx` uses `Promise.all` for parallel weather fetches; `apiClient.js` wraps fetch with timeouts
 
 That's all 5 of our chosen features — one over the required 4.
@@ -139,20 +134,5 @@ git push -u origin your-branch-name
 ```
 
 Then open a PR on GitHub and have a teammate review before merging into `main`.
-
-**Branch convention:**
-- `main` — always works
-- `frontend/<feature>` — Jon's branches
-- `backend/<feature>` — Clonexstax's branches
-- `design/<change>` — JASD3EP's branches
-
 Open PRs into `main`. Aim for small, reviewable commits.
 
----
-
-## What still needs picking up
-
-1. **Real API keys + integrations** — FlightRadar24 and weather provider (Clonexstax). Slots marked `TODO: BACKEND` in `server/services/`.
-2. **Real fonts + final palette** — JASD3EP. All values live in `src/styles/app.css`. Replace placeholders with the real design system.
-3. **Real PWA icons** — replace the placeholder `pwa-*.png` files in `public/` with proper designs (JASD3EP).
-4. **Tests** — even just one round of API testing with Postman/Insomnia covers the "API testing" spec item.
