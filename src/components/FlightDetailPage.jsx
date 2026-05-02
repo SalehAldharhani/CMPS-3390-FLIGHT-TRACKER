@@ -152,7 +152,20 @@ function InfoTile({ label, lines = [] }) {
       <ul>
         {items.length === 0
           ? <li className="ft-tile__empty">—</li>
-          : items.map((l, i) => <li key={i}>{l}</li>)}
+          : items.map((line, i) => {
+              const sp = line.indexOf(' ');
+              if (sp === -1) return (
+                <li key={i} className="ft-tile__row">
+                  <span className="ft-tile__val">{line}</span>
+                </li>
+              );
+              return (
+                <li key={i} className="ft-tile__row">
+                  <span className="ft-tile__key">{line.slice(0, sp)}</span>
+                  <span className="ft-tile__val">{line.slice(sp + 1)}</span>
+                </li>
+              );
+            })}
       </ul>
     </div>
   );
