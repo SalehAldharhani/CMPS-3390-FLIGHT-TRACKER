@@ -18,7 +18,7 @@ export default function Header() {
           className="ft-header__brand"
           aria-label="Flight Tracker home"
         >
-          <span className="ft-header__mark" aria-hidden="true">✈</span>
+          <img src="/favicon.svg" className="ft-header__mark" alt="" aria-hidden="true" />
           <span className="ft-header__name">Flight Tracker</span>
         </Link>
 
