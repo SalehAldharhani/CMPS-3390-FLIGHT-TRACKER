@@ -1031,6 +1031,10 @@ code,
   align-items: center;
   justify-content: center;
   padding: var(--sp-6) var(--sp-4);
+  background-image: url('/airplane.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .ft-auth__card {
   width: 100%;
