@@ -1,31 +1,31 @@
-import { lookupAirport } from '../data/airports.js';
-import { cacheGet, cacheSet } from './cache.js';
+import { lookupAirport } from "../data/airports.js";
+import { cacheGet, cacheSet } from "./cache.js";
 
 const FR24_API_KEY = process.env.FLIGHTRADAR24_API_KEY;
-const FR24_BASE    = 'https://fr24api.flightradar24.com/api';
+const FR24_BASE = "https://fr24api.flightradar24.com/api";
 
-const LIVE_TTL_MS       = 60_000;
-const SUMMARY_TTL_MS    = 5 * 60_000;
+const LIVE_TTL_MS = 60_000;
+const SUMMARY_TTL_MS = 5 * 60_000;
 const HISTORICAL_TTL_MS = 24 * 60 * 60_000;
 
 function fr24Headers() {
   return {
-    'Accept':         'application/json',
-    'Accept-Version': 'v1',
-    'Authorization':  `Bearer ${FR24_API_KEY}`,
+    Accept: "application/json",
+    "Accept-Version": "v1",
+    Authorization: `Bearer ${FR24_API_KEY}`,
   };
 }
 
 function mapLiveFlight(raw) {
-  const origin      = lookupAirport(raw.orig_iata);
+  const origin = lookupAirport(raw.orig_iata);
   const destination = lookupAirport(raw.dest_iata);
 
-  const status = 'EN_ROUTE';
+  const status = "EN_ROUTE";
 
-  const airline = raw.painted_as ?? raw.operating_as ?? 'Unknown';
+  const airline = raw.painted_as ?? raw.operating_as ?? "Unknown";
 
   return {
-    flightNumber: raw.flight ?? raw.callsign ?? 'N/A',
+    flightNumber: raw.flight ?? raw.callsign ?? "N/A",
     airline,
     status,
 
@@ -33,21 +33,27 @@ function mapLiveFlight(raw) {
     destination,
 
     departure: { scheduled: null, actual: null, gate: null, runway: null },
-    arrival:   { scheduled: null, estimated: raw.eta ?? null, gate: null, runway: null },
+    arrival: {
+      scheduled: null,
+      estimated: raw.eta ?? null,
+      gate: null,
+      runway: null,
+    },
 
-    position: (raw.lat != null && raw.lon != null)
-      ? {
-          lat:         raw.lat,
-          lon:         raw.lon,
-          altitude:    raw.alt ?? 0,
-          heading:     raw.track ?? 0,
-          groundSpeed: raw.gspeed ?? 0,
-        }
-      : null,
+    position:
+      raw.lat != null && raw.lon != null
+        ? {
+            lat: raw.lat,
+            lon: raw.lon,
+            altitude: raw.alt ?? 0,
+            heading: raw.track ?? 0,
+            groundSpeed: raw.gspeed ?? 0,
+          }
+        : null,
 
     aircraft: {
-      model:        raw.type ?? 'Unknown',
-      registration: raw.reg  ?? 'N/A',
+      model: raw.type ?? "Unknown",
+      registration: raw.reg ?? "N/A",
     },
   };
 }
@@ -67,7 +73,8 @@ function tripRateLimit() {
 }
 
 export async function fetchFlightFromProvider(flightNumber) {
-  if (!FR24_API_KEY) throw new Error('FLIGHTRADAR24_API_KEY is not set in .env');
+  if (!FR24_API_KEY)
+    throw new Error("FLIGHTRADAR24_API_KEY is not set in .env");
 
   const cacheKey = `live:${flightNumber}`;
   const cached = cacheGet(cacheKey);
@@ -79,7 +86,7 @@ export async function fetchFlightFromProvider(flightNumber) {
   const res = await fetch(url, { headers: fr24Headers() });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
+    const body = await res.text().catch(() => "");
     if (res.status === 429) tripRateLimit();
     throw new Error(`FR24 error ${res.status}: ${body}`);
   }
@@ -98,7 +105,8 @@ export async function fetchFlightFromProvider(flightNumber) {
 }
 
 export async function fetchFlightDetailsFromProvider(flightNumber) {
-  if (!FR24_API_KEY) throw new Error('FLIGHTRADAR24_API_KEY is not set in .env');
+  if (!FR24_API_KEY)
+    throw new Error("FLIGHTRADAR24_API_KEY is not set in .env");
 
   const live = await fetchFlightFromProvider(flightNumber);
   if (!live) return null;
@@ -115,15 +123,15 @@ export async function fetchFlightDetailsFromProvider(flightNumber) {
       ...live,
       departure: {
         scheduled: null,
-        actual:    summary.datetime_takeoff ?? null,
-        gate:      null,
-        runway:    summary.runway_takeoff ?? null,
+        actual: summary.datetime_takeoff ?? null,
+        gate: null,
+        runway: summary.runway_takeoff ?? null,
       },
       arrival: {
         scheduled: null,
         estimated: live.arrival.estimated,
-        gate:      null,
-        runway:    summary.runway_landed ?? null,
+        gate: null,
+        runway: summary.runway_landed ?? null,
       },
     };
   }
@@ -139,10 +147,10 @@ async function fetchFlightSummary(flightNumber) {
 
   const params = new URLSearchParams({
     flights: flightNumber,
-    flight_datetime_from: yesterday.toISOString().replace(/\.\d+Z$/, ''),
-    flight_datetime_to:   now.toISOString().replace(/\.\d+Z$/, ''),
-    sort:  'desc',
-    limit: '1',
+    flight_datetime_from: yesterday.toISOString().replace(/\.\d+Z$/, ""),
+    flight_datetime_to: now.toISOString().replace(/\.\d+Z$/, ""),
+    sort: "desc",
+    limit: "1",
   });
 
   const url = `${FR24_BASE}/flight-summary/full?${params}`;
@@ -164,7 +172,8 @@ async function fetchFlightSummary(flightNumber) {
 }
 
 export async function fetchLastFlightFromProvider(flightNumber) {
-  if (!FR24_API_KEY) throw new Error('FLIGHTRADAR24_API_KEY is not set in .env');
+  if (!FR24_API_KEY)
+    throw new Error("FLIGHTRADAR24_API_KEY is not set in .env");
 
   const cacheKey = `last:${flightNumber}`;
   const cached = cacheGet(cacheKey);
@@ -178,14 +187,16 @@ export async function fetchLastFlightFromProvider(flightNumber) {
     return null;
   }
 
-  const origin      = lookupAirport(summary.orig_iata);
-  const destination = lookupAirport(summary.dest_iata_actual ?? summary.dest_iata);
+  const origin = lookupAirport(summary.orig_iata);
+  const destination = lookupAirport(
+    summary.dest_iata_actual ?? summary.dest_iata,
+  );
 
-  const status = summary.flight_ended ? 'LANDED' : 'EN_ROUTE';
+  const status = summary.flight_ended ? "LANDED" : "EN_ROUTE";
 
   const flight = {
     flightNumber: summary.flight ?? flightNumber,
-    airline:      summary.painted_as ?? summary.operating_as ?? 'Unknown',
+    airline: summary.painted_as ?? summary.operating_as ?? "Unknown",
     status,
 
     origin,
@@ -193,30 +204,31 @@ export async function fetchLastFlightFromProvider(flightNumber) {
 
     departure: {
       scheduled: null,
-      actual:    summary.datetime_takeoff ?? null,
-      gate:      null,
-      runway:    summary.runway_takeoff ?? null,
+      actual: summary.datetime_takeoff ?? null,
+      gate: null,
+      runway: summary.runway_takeoff ?? null,
     },
     arrival: {
       scheduled: null,
       estimated: summary.datetime_landed ?? null,
-      gate:      null,
-      runway:    summary.runway_landed ?? null,
+      gate: null,
+      runway: summary.runway_landed ?? null,
     },
 
-    position: (destination.lat !== 0 || destination.lon !== 0)
-      ? {
-          lat:         destination.lat,
-          lon:         destination.lon,
-          altitude:    0,
-          heading:     0,
-          groundSpeed: 0,
-        }
-      : null,
+    position:
+      destination.lat !== 0 || destination.lon !== 0
+        ? {
+            lat: destination.lat,
+            lon: destination.lon,
+            altitude: 0,
+            heading: 0,
+            groundSpeed: 0,
+          }
+        : null,
 
     aircraft: {
-      model:        summary.type ?? 'Unknown',
-      registration: summary.reg  ?? 'N/A',
+      model: summary.type ?? "Unknown",
+      registration: summary.reg ?? "N/A",
     },
 
     isHistorical: true,
@@ -226,9 +238,9 @@ export async function fetchLastFlightFromProvider(flightNumber) {
   return flight;
 }
 
-
 export async function searchFlightsFromProvider(query) {
-  if (!FR24_API_KEY) throw new Error('FLIGHTRADAR24_API_KEY is not set in .env');
+  if (!FR24_API_KEY)
+    throw new Error("FLIGHTRADAR24_API_KEY is not set in .env");
 
   const q = String(query).trim().toUpperCase();
   if (!q) return [];
@@ -243,7 +255,7 @@ export async function searchFlightsFromProvider(query) {
   const res = await fetch(url, { headers: fr24Headers() });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
+    const body = await res.text().catch(() => "");
     if (res.status === 429) tripRateLimit();
     throw new Error(`FR24 search error ${res.status}: ${body}`);
   }
