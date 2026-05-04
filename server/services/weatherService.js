@@ -1,4 +1,6 @@
 const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1/forecast';
+const TTL = 10 * 60 * 1000; // 10 minutes
+const cache = new Map();
 
 function describeWeatherCode(code) {
   const map = {
@@ -54,6 +56,10 @@ function weatherCodeToIcon(code) {
 }
 
 export async function fetchWeatherFromProvider({ lat, lon }) {
+  const key = `${Number(lat).toFixed(2)},${Number(lon).toFixed(2)}`;
+  const hit = cache.get(key);
+  if (hit && Date.now() < hit.expiresAt) return hit.data;
+
   const params = new URLSearchParams({
     latitude:        String(lat),
     longitude:       String(lon),
@@ -80,7 +86,7 @@ export async function fetchWeatherFromProvider({ lat, lon }) {
     ? Math.round((c.visibility / 1000) * 10) / 10
     : null;
 
-  return {
+  const result = {
     location:        `${Number(lat).toFixed(2)}, ${Number(lon).toFixed(2)}`,
 
     tempC:           tempC,
@@ -96,4 +102,7 @@ export async function fetchWeatherFromProvider({ lat, lon }) {
 
     updatedAt:       new Date().toISOString(),
   };
+
+  cache.set(key, { data: result, expiresAt: Date.now() + TTL });
+  return result;
 }
