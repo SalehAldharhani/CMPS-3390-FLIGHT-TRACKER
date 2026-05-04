@@ -63,7 +63,7 @@ export async function fetchWeatherFromProvider({ lat, lon }) {
   const params = new URLSearchParams({
     latitude:        String(lat),
     longitude:       String(lon),
-    current:         'temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,visibility',
+    current:         'temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,visibility,is_day',
     wind_speed_unit: 'kmh',
     timezone:        'auto',
   });
@@ -94,6 +94,7 @@ export async function fetchWeatherFromProvider({ lat, lon }) {
 
     condition:       describeWeatherCode(code),
     icon:            weatherCodeToIcon(code),
+    isDay:           c.is_day !== 0,
 
     windKph:         c.wind_speed_10m ?? 0,
     windDirection:   degreesToCompass(c.wind_direction_10m),

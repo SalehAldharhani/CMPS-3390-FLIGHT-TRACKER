@@ -783,7 +783,8 @@ code,
 
 .ft-weather__card--bg-overcast,
 .ft-weather__card--bg-rain,
-.ft-weather__card--bg-storm {
+.ft-weather__card--bg-storm,
+.ft-weather__card--bg-clear-night {
   border-color: transparent;
   --color-text-muted: rgba(255, 255, 255, 0.85);
   --color-text-faint: rgba(255, 255, 255, 0.65);
@@ -798,6 +799,9 @@ code,
 
 .ft-weather__card--bg-clear {
   background: linear-gradient(145deg, #fde68a 0%, #fdba74 30%, #60a5fa 100%);
+}
+.ft-weather__card--bg-clear-night {
+  background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 55%, #0c1a3d 100%);
 }
 .ft-weather__card--bg-cloudy {
   background: linear-gradient(145deg, #bfdbfe 0%, #e2e8f0 50%, #94a3b8 100%);
