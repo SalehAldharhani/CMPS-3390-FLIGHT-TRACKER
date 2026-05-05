@@ -1,6 +1,7 @@
 # Flight Tracker — Project 3
 
 ### Currently Live on https://cmps-3390-flight-tracker.onrender.com/
+---
 
 A progressive web app (PWA) that tracks live flights with weather context for both origin and destination airports. Each tracked flight gets a shareable deep link so family and friends can follow along.
 
