@@ -1106,10 +1106,22 @@ code,
 }
 
 @keyframes saucer-shuttle {
-  0%   { left: 0;                  transform: scaleX(1);  }
-  49%  { left: calc(100% - 28px);  transform: scaleX(1);  }
-  50%  { left: calc(100% - 28px);  transform: scaleX(-1); }
-  100% { left: 0;                  transform: scaleX(-1); }
+  0% {
+    left: 0;
+    transform: scaleX(1);
+  }
+  49% {
+    left: calc(100% - 28px);
+    transform: scaleX(1);
+  }
+  50% {
+    left: calc(100% - 28px);
+    transform: scaleX(-1);
+  }
+  100% {
+    left: 0;
+    transform: scaleX(-1);
+  }
 }
 
 .ft-detail__historical-badge {
@@ -1156,6 +1168,6 @@ code,
 .ft-detail__msg-back {
   display: inline-block;
   margin-top: 1rem;
-  font-size: 0.875rem;
+  font-size: 0.876rem;
   color: var(--color-text-muted);
 }
