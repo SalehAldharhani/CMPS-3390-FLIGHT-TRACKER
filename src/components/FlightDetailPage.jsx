@@ -29,9 +29,6 @@ export default function FlightDetailPage() {
           tracked live right now. Would you like to see its last completed leg
           instead?
         </p>
-        <p className="ft-detail__msg-meta">
-          (Looks up the most recent flight in the past 24 hours. Costs one extra credit.)
-        </p>
         <div className="ft-detail__msg-actions">
           <button
             className="ft-detail__btn ft-detail__btn--primary"

@@ -1,5 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
-import { fetchFlight, fetchFlightDetails, fetchLastFlight } from '../apiClient.js';
+import { useEffect, useState, useCallback } from "react";
+import {
+  fetchFlight,
+  fetchFlightDetails,
+  fetchLastFlight,
+} from "../apiClient.js";
 
 export default function useFlight(flightNumber, options = {}) {
   const { pollMs, detailed = false, offerFallback = false } = options;
@@ -8,10 +12,14 @@ export default function useFlight(flightNumber, options = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [pendingLast, setPendingLast] = useState(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (!flightNumber) { setLoading(false); return; }
+    if (!flightNumber) {
+      setLoading(false);
+      return;
+    }
 
     const ctrl = new AbortController();
     let timer;
@@ -22,14 +30,25 @@ export default function useFlight(flightNumber, options = {}) {
         setLoading(true);
         setError(null);
         setNeedsConfirmation(false);
+        setPendingLast(null);
         const f = await fetcher(flightNumber, { signal: ctrl.signal });
         setFlight(f);
       } catch (err) {
-        if (err.name === 'AbortError') return;
+        if (err.name === "AbortError") return;
 
         if (offerFallback && err.status === 404) {
-          setFlight(null);
-          setNeedsConfirmation(true);
+          try {
+            const last = await fetchLastFlight(flightNumber, {
+              signal: ctrl.signal,
+            });
+            // Flight exists but isn't airborne right now — offer the prompt
+            setPendingLast(last);
+            setNeedsConfirmation(true);
+          } catch (lastErr) {
+            if (lastErr.name === "AbortError") return;
+
+            setError(new Error(`No flight found with number ${flightNumber}.`));
+          }
         } else {
           setError(err);
         }
@@ -50,22 +69,15 @@ export default function useFlight(flightNumber, options = {}) {
     };
   }, [flightNumber, pollMs, detailed, offerFallback, tick]);
 
-  const confirmFallback = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setNeedsConfirmation(false);
-      const f = await fetchLastFlight(flightNumber);
-      setFlight(f);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [flightNumber]);
+  const confirmFallback = useCallback(() => {
+    setFlight(pendingLast);
+    setNeedsConfirmation(false);
+    setPendingLast(null);
+  }, [pendingLast]);
 
   const declineFallback = useCallback(() => {
     setNeedsConfirmation(false);
+    setPendingLast(null);
     setError(new Error(`Flight ${flightNumber} is not currently airborne.`));
   }, [flightNumber]);
 

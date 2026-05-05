@@ -4,6 +4,7 @@ export default function Footer() {
       <div className="ft-footer__inner">
         <span>© {new Date().getFullYear()} Flight Tracker</span>
         <span className="ft-footer__credits">
+          <img src="/saucer.png" className="ft-saucer" alt="" aria-hidden="true" />
           Built by Jonathan Torres, Jasdeep Singh & Saleh Al-Dharhani
         </span>
       </div>

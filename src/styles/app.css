@@ -1090,6 +1090,28 @@ code,
     transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.ft-footer__credits {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  position: relative;
+}
+
+.ft-saucer {
+  width: 28px;
+  position: absolute;
+  top: -26px;
+  left: 0;
+  pointer-events: none;
+  animation: saucer-shuttle 8s linear infinite;
+}
+
+@keyframes saucer-shuttle {
+  0%   { left: 0;                  transform: scaleX(1);  }
+  49%  { left: calc(100% - 28px);  transform: scaleX(1);  }
+  50%  { left: calc(100% - 28px);  transform: scaleX(-1); }
+  100% { left: 0;                  transform: scaleX(-1); }
+}
+
 .ft-detail__historical-badge {
   display: inline-block;
   margin-left: 0.5rem;

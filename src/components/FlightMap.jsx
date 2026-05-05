@@ -56,7 +56,15 @@ const MAP_STYLE = {
       attribution:
         "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
     },
-    route: {
+    "route-flown": {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: [] },
+      },
+    },
+    "route-remaining": {
       type: "geojson",
       data: {
         type: "Feature",
@@ -83,25 +91,35 @@ const MAP_STYLE = {
       paint: { "fill-color": "#04111f", "fill-opacity": 0.72 },
     },
     {
-      id: "route-glow",
+      id: "route-flown-glow",
       type: "line",
-      source: "route",
+      source: "route-flown",
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: {
-        "line-color": "#ff6b6b",
-        "line-width": 10,
-        "line-opacity": 0.25,
-      },
+      paint: { "line-color": "#ff6b6b", "line-width": 10, "line-opacity": 0.25 },
     },
     {
-      id: "route-line",
+      id: "route-flown-line",
       type: "line",
-      source: "route",
+      source: "route-flown",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#ff3b3b", "line-width": 2.5, "line-opacity": 1 },
+    },
+    {
+      id: "route-remaining-glow",
+      type: "line",
+      source: "route-remaining",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#ffffff", "line-width": 10, "line-opacity": 0.1 },
+    },
+    {
+      id: "route-remaining-line",
+      type: "line",
+      source: "route-remaining",
       layout: { "line-cap": "round", "line-join": "round" },
       paint: {
-        "line-color": "#ff3b3b",
-        "line-width": 2.5,
-        "line-opacity": 1,
+        "line-color": "#ffffff",
+        "line-width": 2,
+        "line-opacity": 0.6,
         "line-dasharray": [2, 1.5],
       },
     },
@@ -202,21 +220,28 @@ export default function FlightMap({ flight }) {
       )
       .addTo(map);
 
-    map.getSource("route")?.setData({
-      type: "Feature",
-      properties: {},
-      geometry: { type: "LineString", coordinates: routeCoords },
-    });
-
     markersRef.current.plane?.remove();
     markersRef.current.plane = null;
     let snappedPlane = null;
+
     if (flight.position) {
       const snap = closestPointOnPath(
         [flight.position.lon, flight.position.lat],
         routeCoords,
       );
       snappedPlane = snap.point;
+
+      const flownCoords    = routeCoords.slice(0, snap.index + 1);
+      const remainingCoords = routeCoords.slice(snap.index);
+
+      map.getSource("route-flown")?.setData({
+        type: "Feature", properties: {},
+        geometry: { type: "LineString", coordinates: flownCoords },
+      });
+      map.getSource("route-remaining")?.setData({
+        type: "Feature", properties: {},
+        geometry: { type: "LineString", coordinates: remainingCoords },
+      });
 
       const nextIdx = Math.min(snap.index + 1, routeCoords.length - 1);
       const routeHeading =
@@ -235,6 +260,16 @@ export default function FlightMap({ flight }) {
           ),
         )
         .addTo(map);
+    } else {
+      // No live position — show full route as remaining (white)
+      map.getSource("route-flown")?.setData({
+        type: "Feature", properties: {},
+        geometry: { type: "LineString", coordinates: [] },
+      });
+      map.getSource("route-remaining")?.setData({
+        type: "Feature", properties: {},
+        geometry: { type: "LineString", coordinates: routeCoords },
+      });
     }
 
     const bounds = new maplibregl.LngLatBounds();
