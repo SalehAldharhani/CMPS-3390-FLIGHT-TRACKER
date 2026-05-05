@@ -1,99 +1,98 @@
 # Features & Requirements
 
-## Functional requirements
+## Functional Requirements
 
-### F1. Flight search
-- Enter a flight number (format: 2 alphanumeric carrier code + 1–4 digit number, e.g. `AA100`, `BA2490`).
-- Validate format **client-side** before sending the request.
-- Re-validate **server-side** before hitting the upstream API.
-- Show clear error messages for invalid input.
+### F1. Flight Search
 
-### F2. Flight detail view
-For a given flight, show:
-- Airline + flight number + status badge (En route / Scheduled / Landed / Delayed / Cancelled).
-- Origin and destination IATA codes and city names.
-- Scheduled vs actual departure time, gate.
-- Scheduled vs estimated arrival time, gate.
-- Live position (latitude, longitude, altitude, heading, ground speed) when airborne.
-- Aircraft model and registration.
-- A map showing origin, destination, route, and live position.
-- Live weather at both origin and destination.
+- Type in a flight number like `AA100` or `BA2490` (2 letters/numbers for the airline + 1 to 4 digits).
+- The app checks the format before even sending a request (client-side).
+- The server also checks the format again before calling the flight API (server-side).
+- If the format is wrong, a clear error message is shown.
 
-### F3. Tracked flights
-- "Track this flight" button on the detail page.
-- Tracked flights persist across browser sessions (localStorage), **scoped per signed-in user** (each user sees their own list).
-- Home page shows a card for each tracked flight with status + progress bar.
-- Cards auto-refresh every 60 seconds.
-- Each card has an "Untrack" action.
+### F2. Flight Detail View
 
-### F4. Share link
-- "Share link" button generates a URL like `/share/<random-id>`.
-- The link is copied to clipboard automatically.
-- Anyone with the link can view the flight read-only — no account needed.
-- Links expire after 7 days.
+When you look up a flight, the app shows:
 
-### F5. Weather impact indicator
-- Each weather card has a colour-coded left border:
-  - **Green** = clear conditions for flight
-  - **Amber** = caution (high wind 35–60 kph or visibility 2–8 km)
-  - **Red** = severe (wind ≥ 60 kph or visibility < 2 km)
+- Airline name, flight number, and a status badge (En route / Scheduled / Landed / Delayed / Cancelled).
+- Where the flight is coming from and going to (airport code + city name).
+- Departure time (scheduled vs actual) and gate.
+- Arrival time (scheduled vs estimated) and gate.
+- Live position (altitude, speed, heading) while the flight is in the air.
+- Aircraft model and registration number.
+- A globe map showing the route and live plane position.
+- Current weather at both the departure and arrival airports.
 
-### F6. Progressive Web App
-- Installable on desktop and mobile.
-- Works offline for the shell (cached static assets).
-- Custom theme color and icons.
+### F3. Tracked Flights
 
-### F7. Local accounts (sign up / sign in)
-- New users can create an account with a username (3–20 chars, alphanumeric + `_-`) and password (8+ chars).
-- Returning users can sign in with their existing credentials.
-- Validation runs client-side using `validateUsername` and `validatePassword`.
-- Accounts persist in browser `localStorage` under the keys `ft.users.v1` and `ft.currentUser.v1`.
-- Sign in / sign up are **required** to use the home page, search, and flight detail.
-- The share-link route (`/share/:shareId`) is **public** — no account needed to view a shared flight.
-- Header shows the current username and a Sign out button when signed in.
-- Sign out clears the current session but does NOT delete the account; users can sign back in.
-- Each user has their own tracked-flight list (see F3).
+- You can click "Track this flight" on any flight detail page.
+- Your tracked flights are saved in the browser and stay there even if you close the tab.
+- Each user only sees their own tracked flights — not other users'.
+- The home page shows a card for each tracked flight with its status and a progress bar.
+- Cards have a manual refresh button to get the latest data.
+- Each card has an "Untrack" button to remove it.
 
-**Known limitation, by design:** This is local-only auth. Passwords are stored in plaintext in browser localStorage. It's a personalization layer for the demo, not a security layer. Real server-side auth (hashed passwords + sessions) is out of scope for v1.
+### F4. Share Link
+
+- Click "Share link" on any flight detail page to generate a unique URL.
+- The link is automatically copied to your clipboard.
+- Anyone with the link can view the flight — no account needed.
+- Share links expire after 7 days.
+
+### F5. Weather Impact Indicator
+
+Each weather card has a color-coded left border showing flying conditions:
+
+- **Green** = clear, good conditions
+- **Amber** = caution (wind between 35–60 kph or visibility between 2–8 km)
+- **Red** = severe (wind 60+ kph or visibility under 2 km)
+
+### F6. Progressive Web App (PWA)
+
+- The app can be installed on desktop and mobile like a native app.
+- Basic shell works offline (cached static files).
+- Has a custom icon and theme color.
+
+### F7. Accounts (Sign Up / Sign In)
+
+- Create an account with a username (3–20 characters, letters/numbers/underscores/hyphens) and a password (8+ characters).
+- Existing users can sign back in anytime.
+- Input is validated before submitting.
+- Accounts are stored in your browser's localStorage — nothing is sent to a server.
+- You must be signed in to search flights or use the home page.
+- Share links (`/share/...`) are public — no account needed to view them.
+- The header shows your username and a Sign Out button when you're logged in.
+- Signing out ends your session but does not delete your account.
+- Each user has their own separate tracked flights list.
+
+**Note:** Accounts are for personalization only. Passwords are stored in plaintext in the browser — do not reuse a real password. Proper server-side auth is out of scope for this version.
 
 ---
 
-## Non-functional requirements
+## Non-Functional Requirements
 
 ### Performance
-- Initial page load under 2 seconds on a typical connection.
-- API responses under 800 ms p95.
-- Use polling (30 s for detail, 60 s for cards) — no aggressive refreshing.
 
-### Security & privacy
-- API keys live only on the server. The client never sees them.
-- All user input (flight numbers, free text) sanitized before storage.
-- Rate limit per IP at 120 requests / minute.
-- No third-party tracking; no analytics in v1.
+- Page should load in under 2 seconds on a normal connection.
+- API responses should come back in under 800 ms.
+- No automatic polling — users manually refresh flight data using the refresh button.
+
+### Security & Privacy
+
+- API keys are only stored on the server. The browser never sees them.
+- All user input is sanitized before use.
+- Rate limited to 120 requests per minute per IP address.
+- No third-party tracking or analytics.
 
 ### Accessibility
-- All interactive elements reachable by keyboard.
-- Form errors announced via `aria-describedby` and `role="alert"`.
-- Sufficient color contrast (≥ 4.5:1 for body text).
-- Don't rely on color alone for status — always pair with a text label.
 
-### Browser support
-- Latest 2 versions of Chrome, Firefox, Safari, Edge.
-- Mobile Safari and Chrome Android.
+- Everything works with a keyboard — no mouse required.
+- Form errors are announced to screen readers.
+- Text has enough color contrast to be readable.
+- Status is always shown as text, not just color.
 
-### Code quality
-- Each module has a clear owner (see README).
-- All design values come from the token section at the top of `app.css` (no magic numbers / hex codes elsewhere).
-- Validators shared between client and server (single source of truth).
+### Browser Support
+
+- Works on the latest 2 versions of Chrome, Firefox, Safari, and Edge.
+- Works on Mobile Safari and Chrome on Android.
 
 ---
-
-## Acceptance criteria for "done"
-
-A feature is done when:
-1. It works with real (not mocked) data.
-2. It has at least one happy-path manual test recorded.
-3. Error states are handled (loading, error, empty).
-4. CSS uses tokens from the top of `app.css`.
-5. There's an `OWNER:` comment at the top of new files.
-6. It's been merged to `main` via PR with at least one review.
